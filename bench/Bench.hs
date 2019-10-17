@@ -36,12 +36,12 @@ main = defaultMain
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) ne
         , bench "foldl1map id min"  $ whnf (foldl1map id min) ne
         ]
-    , env (return $ NE2 input) $ \ne -> bgroup "NonEmpty-toNonEmpty"
-        [ bench "foldl1' min"       $ whnf (foldl1' min) ne
-        , bench "foldl1 min"        $ whnf (foldl1 min) ne
-        , bench "foldl1'map id min" $ whnf (foldl1'map id min) ne
-        , bench "foldl1map id min"  $ whnf (foldl1map id min) ne
-        ]
+   -- , env (return $ NE2 input) $ \ne -> bgroup "NonEmpty-toNonEmpty"
+   --     [ bench "foldl1' min"       $ whnf (foldl1' min) ne
+   --     , bench "foldl1 min"        $ whnf (foldl1 min) ne
+   --     , bench "foldl1'map id min" $ whnf (foldl1'map id min) ne
+   --     , bench "foldl1map id min"  $ whnf (foldl1map id min) ne
+   --     ]
     , env (return $ NE3 input) $ \ne -> bgroup "NonEmpty-foldr1map"
         [ bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
@@ -55,24 +55,43 @@ main = defaultMain
         , bench "last1" $ whnf last1 tr
         , bench "maximum1" $ whnf maximum1 tr
         , bench "maximum1'" $ whnf (foldl1' max) tr
+
+        , bench "foldl1' min"       $ whnf (foldl1' min) tr
+        , bench "foldl1 min"        $ whnf (foldl1 min) tr
+        , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr
+        , bench "foldl1map id min"  $ whnf (foldl1map id min) tr
         ]
     , env (return $ Tree1 tree) $ \tr -> bgroup "Tree-foldMap1"
         [ bench "head1" $ whnf head1 tr
         , bench "last1" $ whnf last1 tr
         , bench "maximum1" $ whnf maximum1 tr
         , bench "maximum1'" $ whnf (foldl1' max) tr
+
+        , bench "foldl1' min"       $ whnf (foldl1' min) tr
+        , bench "foldl1 min"        $ whnf (foldl1 min) tr
+        , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr
+        , bench "foldl1map id min"  $ whnf (foldl1map id min) tr
         ]
-    , env (return $ Tree2 tree) $ \tr -> bgroup "Tree-toNonEmpty"
-        [ bench "head1" $ whnf head1 tr
-        , bench "last1" $ whnf last1 tr
-        , bench "maximum1" $ whnf maximum1 tr
-        , bench "maximum1'" $ whnf (foldl1' max) tr
-        ]
+   -- , env (return $ Tree2 tree) $ \tr -> bgroup "Tree-toNonEmpty"
+   --     [ bench "head1" $ whnf head1 tr
+   --     , bench "last1" $ whnf last1 tr
+   --     , bench "maximum1" $ whnf maximum1 tr
+   --     , bench "maximum1'" $ whnf (foldl1' max) tr
+   --     , bench "foldl1' min"       $ whnf (foldl1' min) tr
+   --     , bench "foldl1 min"        $ whnf (foldl1 min) tr
+   --     , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr
+   --     , bench "foldl1map id min"  $ whnf (foldl1map id min) tr
+   --     ]
     , env (return $ Tree3 tree) $ \tr -> bgroup "Tree-foldr1map"
         [ bench "head1" $ whnf head1 tr
         , bench "last1" $ whnf last1 tr
         , bench "maximum1" $ whnf maximum1 tr
         , bench "maximum1'" $ whnf (foldl1' max) tr
+
+        , bench "foldl1' min"       $ whnf (foldl1' min) tr
+        , bench "foldl1 min"        $ whnf (foldl1 min) tr
+        , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr
+        , bench "foldl1map id min"  $ whnf (foldl1map id min) tr
         ]
     ]
 
@@ -90,15 +109,15 @@ instance NFData a => NFData (NE1 a) where
 instance Foldable1 NE1 where
     foldMap1 f (NE1 xs) = foldMap1 f xs
 
--- Using to nonEmpty
-newtype NE2 a = NE2 (NonEmpty a)
-  deriving (Functor, Foldable)
-
-instance NFData a => NFData (NE2 a) where
-    rnf (NE2 xs) = rnf xs
-
-instance Foldable1 NE2 where
-    toNonEmpty (NE2 xs) = toNonEmpty xs
+-- Using toNonEmpty
+-- newtype NE2 a = NE2 (NonEmpty a)
+--   deriving (Functor, Foldable)
+-- 
+-- instance NFData a => NFData (NE2 a) where
+--     rnf (NE2 xs) = rnf xs
+-- 
+-- instance Foldable1 NE2 where
+--     toNonEmpty (NE2 xs) = toNonEmpty xs
 
 -- Using to foldr1map
 newtype NE3 a = NE3 (NonEmpty a)
@@ -114,6 +133,7 @@ instance Foldable1 NE3 where
 -- Tree variants
 -------------------------------------------------------------------------------
 
+-- Using foldMap1 only
 newtype Tree1 a = Tree1 (Tree a)
   deriving (Functor, Foldable)
 
@@ -123,15 +143,17 @@ instance NFData a => NFData (Tree1 a) where
 instance Foldable1 Tree1 where
     foldMap1 f (Tree1 xs) = foldMap1 f xs
 
-newtype Tree2 a = Tree2 (Tree a)
-  deriving (Functor, Foldable)
+-- Using toNonEmpty
+-- newtype Tree2 a = Tree2 (Tree a)
+--   deriving (Functor, Foldable)
+-- 
+-- instance NFData a => NFData (Tree2 a) where
+--     rnf (Tree2 xs) = rnf xs
+-- 
+-- instance Foldable1 Tree2 where
+--     toNonEmpty (Tree2 xs) = toNonEmpty xs
 
-instance NFData a => NFData (Tree2 a) where
-    rnf (Tree2 xs) = rnf xs
-
-instance Foldable1 Tree2 where
-    toNonEmpty (Tree2 xs) = toNonEmpty xs
-
+-- Using to foldr1map
 newtype Tree3 a = Tree3 (Tree a)
   deriving (Functor, Foldable)
 

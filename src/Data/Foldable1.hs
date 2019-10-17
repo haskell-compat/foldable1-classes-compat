@@ -43,7 +43,7 @@ import Data.Semigroup
        (Dual (..), First (..), Last (..), Max (..), Min (..), Product (..),
        Semigroup (..), Sum (..))
 import Prelude
-       (Monad (..), Ord, Ordering (..), id, map, ($), ($!), (.), (=<<))
+       (Monad (..), Maybe (..), Ord, Ordering (..), id, map, ($), ($!), (.), (=<<))
 
 import qualified Data.List.NonEmpty as NE
 
@@ -95,20 +95,25 @@ coerce = unsafeCoerce
 (#.) _f = coerce
 #endif
 
--- TODO: Data.Functor.Compose
--- TODO: Data.Functor.Product
--- TODO: Data.Functor.Identity
--- TODO: Data.Functor.Sum
-
 -- | Non-empty data structures that can be folded.
 class Foldable t => Foldable1 t where
 #if __GLASGOW_HASKELL__ >= 708
-    {-# MINIMAL foldMap1 | toNonEmpty | foldr1map #-}
+    {-# MINIMAL foldMap1 | foldr1map #-}
 #endif
 
-    -- foldMap1 defined using foldr1map
-    -- foldr1map defined using toNonEmpty
-    -- toNonEmpty defined using foldMap1
+    -- At some point during design it was possible to define this class using
+    -- only 'toNonEmpty'. But it seems a bad idea in general.
+    --
+    -- So currently we require either foldMap1 or foldr1map
+    --
+    -- * foldMap1 defined using foldr1map
+    -- * foldr1map defined using foldMap1
+    --
+    -- One can alsays define instance using following pattern:
+    --
+    --     toNonEmpty = ...
+    --     foldMap f     = foldMap f     . toNonEmpty
+    --     foldr1map f g = foldr1map f g . toNonEmpty
 
     -- | Combine the elements of a structure using a semigroup.
     fold1 :: Semigroup m => t m -> m
@@ -212,25 +217,42 @@ class Foldable t => Foldable1 t where
 
     -- | For 'Functor's, @'foldr1map' f g = foldr1 g . 'fmap' g@.
     foldr1map :: (a -> b) -> (b -> b -> b) -> t a -> b
-    foldr1map f g = foldr1map f g . toNonEmpty
+    foldr1map f g xs =
+        -- foldr1map f g . toNonEmpty
+        appFromMaybe (foldMap1 (FromMaybe #. h) xs) Nothing
+      where
+        h a Nothing  = f a
+        h a (Just b) = g (f a) b
 
     -- | For 'Functor's, @'foldl1'map' f g = foldl1' g . 'fmap' g@.
     foldl1'map :: (a -> b) -> (b -> b -> b) -> t a -> b
     foldl1'map f g xs = foldr1map f' (\x y z -> y $! SJust (x z)) xs SNothing
       where
         f' a SNothing  = f a
-        f' a (SJust b) = g (f a) b
+        f' a (SJust b) = g b (f a)
 
     -- | For 'Functor's, @'foldl1map' f g = foldl1 g . 'fmap' g@.
     foldl1map :: (a -> b) -> (b -> b -> b) -> t a -> b
-    foldl1map f g = foldl1map f g . toNonEmpty
+    foldl1map f g xs = 
+        -- foldl1map f g . toNonEmpty
+        appFromMaybe (getDual (foldMap1 ((Dual . FromMaybe) #. h) xs)) Nothing
+      where
+        h a Nothing  = f a
+        h a (Just b) = g b (f a)
 
     -- | For 'Functor's, @'foldr1'map' f g = foldr1' g . 'fmap' g@.
     foldr1'map :: (a -> b) -> (b -> b -> b) -> t a -> b
-    foldr1'map f g xs = foldl1map f' (\x y z -> y $! SJust (x z)) xs SNothing
+    foldr1'map f g xs = foldl1map f' (\x y z -> x $! SJust (y z)) xs SNothing
       where
         f' a SNothing  = f a
         f' a (SJust b) = g (f a) b
+
+-- Newtypes for foldr1map and foldl1map definitions.
+-- c.f. Endo
+newtype FromMaybe b = FromMaybe { appFromMaybe :: Maybe b -> b }
+
+instance Semigroup (FromMaybe b) where
+    FromMaybe f <> FromMaybe g = FromMaybe (f . Just . g)
 
 -- Strict maybe, used to implement default foldl1'map etc.
 data SMaybe a = SNothing | SJust !a
@@ -410,9 +432,10 @@ instance Foldable1 Tree where
     foldMap1 f (Node x [])       = f x
     foldMap1 f (Node x (y : ys)) = f x <> foldMap1 (foldMap1 f) (y :| ys)
 
-    foldr1map f _ (Node x [])     = f x
-    foldr1map f g (Node x (y:ys)) =
-        g (f x) (foldr1map (foldr1map f g) g (y :| ys))
+    -- This is incorrect definition!
+    -- foldr1map f _ (Node x [])     = f x
+    -- foldr1map f g (Node x (y:ys)) =
+    --     g (f x) (foldr1map (foldr1map f g) g (y :| ys))
 
     foldl1map f g (Node x xs) = goForest (f x) xs where
         goForest = foldl' go
@@ -426,13 +449,25 @@ instance Foldable1 Tree where
 
 instance Foldable1 Identity where
     foldMap1                = coerce
+
     foldr1 _                = coerce
     foldr1map g _           = coerce g
+    foldl1 _                = coerce
+    foldl1map g _           = coerce g
+
     toNonEmpty (Identity x) = x :| []
+
+    last1    = coerce
+    head1    = coerce
+    minimum1 = coerce
+    maximum1 = coerce
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Product f g) where
     foldMap1 f (Functor.Pair x y)    = foldMap1 f x <> foldMap1 f y
     foldr1map g f (Functor.Pair x y) = foldr (f . g) (foldr1map g f y) x
+
+    head1 (Functor.Pair x _) = head1 x
+    last1 (Functor.Pair _ y) = last1 y
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
     foldMap1 f (Functor.InL x) = foldMap1 f x
@@ -447,12 +482,30 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
     toNonEmpty (Functor.InL x) = toNonEmpty x
     toNonEmpty (Functor.InR y) = toNonEmpty y
 
+    head1 (Functor.InL x) = head1 x
+    head1 (Functor.InR y) = head1 y
+    last1 (Functor.InL x) = last1 x
+    last1 (Functor.InR y) = last1 y
+
+    minimum1 (Functor.InL x) = minimum1 x
+    minimum1 (Functor.InR y) = minimum1 y
+    maximum1 (Functor.InL x) = maximum1 x
+    maximum1 (Functor.InR y) = maximum1 y
+
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Compose f g) where
     foldMap1 f = foldMap1 (foldMap1 f) . getCompose
-    foldr1map f g = foldr1map (foldr1map f g) g . getCompose
+    -- This is incorrect definition!
+    -- foldr1map f g = foldr1map (foldr1map f g) g . getCompose
+
+    head1 = head1 . head1 . getCompose
+    last1 = last1 . last1 . getCompose
 
 instance Foldable1 f => Foldable1 (Reverse f) where
     foldMap1 f = getDual . foldMap1 (Dual . f) . getReverse
+
+    -- TODO:
+    -- head1 = last1 . getReverse
+    -- last1 = head1 . getReverse
 
 instance Foldable1 f => Foldable1 (Backwards f) where
     foldMap1 f = foldMap1 f . forwards
