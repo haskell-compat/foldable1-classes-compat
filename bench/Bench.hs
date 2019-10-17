@@ -26,24 +26,24 @@ main :: IO ()
 main = defaultMain
     -- NonEmpty left folds
     [ env (return input) $ \ne -> bgroup "NonEmpty-vanilla"
-        [ bench "foldMap1 Min"      $ whnf (getMin . foldMap1' Min) ne
-        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1 Min) ne
+        [ bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) ne
+        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) ne
         , bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) ne
         , bench "foldl1map id min"  $ whnf (foldl1map id min) ne
         ]
     , env (return $ NE1 input) $ \ne -> bgroup "NonEmpty-foldMap1"
-        [ bench "foldMap1 Min"      $ whnf (getMin . foldMap1' Min) ne
-        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1 Min) ne
+        [ bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) ne
+        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) ne
         , bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) ne
         , bench "foldl1map id min"  $ whnf (foldl1map id min) ne
         ]
     , env (return $ NE3 input) $ \ne -> bgroup "NonEmpty-foldr1map"
-        [ bench "foldMap1 Min"      $ whnf (getMin . foldMap1' Min) ne
-        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1 Min) ne
+        [ bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) ne
+        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) ne
         , bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) ne
@@ -57,8 +57,8 @@ main = defaultMain
         , bench "maximum1" $ whnf maximum1 tr
         , bench "maximum1'" $ whnf (foldl1' max) tr
 
-        , bench "foldMap1 Min"      $ whnf (getMin . foldMap1' Min) tr
-        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1 Min) tr
+        , bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) tr
+        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) tr
         , bench "foldl1' min"       $ whnf (foldl1' min) tr
         , bench "foldl1 min"        $ whnf (foldl1 min) tr
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr
@@ -70,8 +70,8 @@ main = defaultMain
         , bench "maximum1" $ whnf maximum1 tr
         , bench "maximum1'" $ whnf (foldl1' max) tr
 
-        , bench "foldMap1 Min"      $ whnf (getMin . foldMap1' Min) tr
-        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1 Min) tr
+        , bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) tr
+        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) tr
         , bench "foldl1' min"       $ whnf (foldl1' min) tr
         , bench "foldl1 min"        $ whnf (foldl1 min) tr
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr
@@ -83,8 +83,8 @@ main = defaultMain
         , bench "maximum1" $ whnf maximum1 tr
         , bench "maximum1'" $ whnf (foldl1' max) tr
 
-        , bench "foldMap1 Min"      $ whnf (getMin . foldMap1' Min) tr
-        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1 Min) tr
+        , bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) tr
+        , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) tr
         , bench "foldl1' min"       $ whnf (foldl1' min) tr
         , bench "foldl1 min"        $ whnf (foldl1 min) tr
         , bench "foldl1'map id min" $ whnf (foldl1'map id min) tr

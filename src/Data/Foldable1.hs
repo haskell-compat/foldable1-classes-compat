@@ -43,7 +43,8 @@ import Data.Semigroup
        (Dual (..), First (..), Last (..), Max (..), Min (..), Product (..),
        Semigroup (..), Sum (..))
 import Prelude
-       (Monad (..), Maybe (..), Ord, Ordering (..), id, map, ($), ($!), (.), (=<<))
+       (Maybe (..), Monad (..), Ord, Ordering (..), id, map, seq, ($), ($!),
+       (.), (=<<))
 
 import qualified Data.List.NonEmpty as NE
 
@@ -51,7 +52,7 @@ import qualified Data.List.NonEmpty as NE
 import Data.Complex (Complex (..))
 import GHC.Generics
        ((:*:) (..), (:+:) (..), (:.:) (..), M1 (..), Par1 (..), Rec1 (..), V1)
-import Prelude      (error, seq)
+import Prelude      (error)
 #endif
 
 #if MIN_VERSION_base(4,6,0)
@@ -62,7 +63,7 @@ import Data.Ord (Down (..))
 import qualified Data.Monoid as Mon
 #endif
 
-#ifdef MIN_VERSION_base_orphans
+#if !MIN_VERSION_base(4,12,0)
 import Data.Orphans ()
 #endif
 
@@ -263,7 +264,7 @@ class Foldable t => Foldable1 t where
 
     -- | For 'Functor's, @'foldl1map' f g = foldl1 g . 'fmap' g@.
     foldl1map :: (a -> b) -> (b -> b -> b) -> t a -> b
-    foldl1map f g xs = 
+    foldl1map f g xs =
         -- foldl1map f g . toNonEmpty
         appFromMaybe (getDual (foldMap1 ((Dual . FromMaybe) #. h) xs)) Nothing
       where
@@ -293,6 +294,8 @@ instance Foldable1 NonEmpty where
     foldMap1 f (x :| xs) = go (f x) xs where
         go y [] = y
         go y (z : zs) = y <> go (f z) zs
+
+    foldMap1' f (x :| xs) = foldl' (\m y -> m <> f y) (f x) xs
 
     toNonEmpty = id
 
@@ -462,11 +465,9 @@ instance Foldable1 Tree where
     foldMap1 f (Node x [])       = f x
     foldMap1 f (Node x (y : ys)) = f x <> foldMap1 (foldMap1 f) (y :| ys)
 
-    foldMap1' f (Node x [])       = f x
-    foldMap1' f (Node x (y : ys)) =
-        let fx = f x
-            fy = foldMap1' (foldMap1' f) (y :| ys)
-        in fx `seq` fy `seq` fx <> fy
+    foldMap1' f = go where
+        go (Node x ys) =
+            foldl' (\m zs -> let gozs = go zs in gozs `seq` m <> gozs) (f x) ys
 
     -- This is incorrect definition!
     -- foldr1map f _ (Node x [])     = f x
