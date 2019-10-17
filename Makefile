@@ -3,6 +3,9 @@
 test : phony
 	cabal run test
 
+doctest : phony
+	doctest --fast src/
+
 bench-nonempty : phony
 	cabal run bench -- -o bench-nonempty.html NonEmpty
 

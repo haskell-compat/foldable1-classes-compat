@@ -1,4 +1,5 @@
 branches: master
+doctest: >=8.0.2
 haddock: >= 7.4
 tests: >= 7.4
 benchmarks: >= 7.4 && (<7.8.1 || >7.8.1) && (<8.2.1 || >8.2.1)

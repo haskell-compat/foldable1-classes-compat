@@ -121,10 +121,18 @@ class Foldable t => Foldable1 t where
 
     -- | Map each element of the structure to a semigroup,
     -- and combine the results.
+    --
+    -- >>> foldMap1 Sum (1 :| [2, 3, 4])
+    -- Sum {getSum = 10}
+    --
     foldMap1 :: Semigroup m => (a -> m) -> t a -> m
     foldMap1 f = foldr1map f (<>)
 
     -- | A variant of 'foldMap1' that is strict in the accumulator.
+    --
+    -- >>> foldMap1' Sum (1 :| [2, 3, 4])
+    -- Sum {getSum = 10}
+    --
     foldMap1' :: Semigroup m => (a -> m) -> t a -> m
     foldMap1' f = foldl1'map f (<>)
 
@@ -150,6 +158,7 @@ class Foldable t => Foldable1 t where
 
     -- | Right-associative fold of a structure, but with strict application of
     -- the operator.
+    --
     foldr1' :: (a -> a -> a) -> t a -> a
     foldr1' = foldr1'map id
 
@@ -192,26 +201,47 @@ class Foldable t => Foldable1 t where
     -- to,
     --
     -- @foldl1' f z = foldl1 f . 'toNonEmpty'@
+    --
     foldl1' :: (a -> a -> a) -> t a -> a
     foldl1' = foldl1'map id
 
     -- | List of elements of a structure, from left to right.
+    --
+    -- >>> toNonEmpty (Identity 2)
+    -- 2 :| []
+    --
     toNonEmpty :: t a -> NonEmpty a
     toNonEmpty = runNonEmptyDList . foldMap1 singleton
 
     -- | The largest element of a non-empty structure.
+    --
+    -- >>> maximum1 (32 :| [64, 8, 128, 16])
+    -- 128
+    --
     maximum1 :: forall a . Ord a => t a -> a
     maximum1 = getMax . foldMap1 Max
 
     -- | The least element of a non-empty structure.
+    --
+    -- >>> minimum1 (32 :| [64, 8, 128, 16])
+    -- 8
+    --
     minimum1 :: forall a . Ord a => t a -> a
     minimum1 = getMin . foldMap1 Min
 
     -- | The first element of a non-empty structure.
+    --
+    -- >>> head1 (1 :| [2, 3, 4])
+    -- 1
+    --
     head1 :: t a -> a
     head1 = getFirst . foldMap1 First
 
     -- | The last element of a non-empty structure.
+    --
+    -- >>> last1 (1 :| [2, 3, 4])
+    -- 4
+    --
     last1 :: t a -> a
     last1 = getLast . foldMap1 Last
 
@@ -432,6 +462,12 @@ instance Foldable1 Tree where
     foldMap1 f (Node x [])       = f x
     foldMap1 f (Node x (y : ys)) = f x <> foldMap1 (foldMap1 f) (y :| ys)
 
+    foldMap1' f (Node x [])       = f x
+    foldMap1' f (Node x (y : ys)) =
+        let fx = f x
+            fy = foldMap1' (foldMap1' f) (y :| ys)
+        in fx `seq` fy `seq` fx <> fy
+
     -- This is incorrect definition!
     -- foldr1map f _ (Node x [])     = f x
     -- foldr1map f g (Node x (y:ys)) =
@@ -513,3 +549,6 @@ instance Foldable1 f => Foldable1 (Backwards f) where
 instance Foldable1 f => Foldable1 (Lift f) where
     foldMap1 f (Pure x)  = f x
     foldMap1 f (Other y) = foldMap1 f y
+
+-- $setup
+-- >>> import Prelude hiding (foldr1, foldl1)
