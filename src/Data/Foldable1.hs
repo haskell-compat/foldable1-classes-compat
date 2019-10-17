@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -66,12 +67,12 @@ import Data.Orphans ()
 #endif
 
 -- Instances
-import Data.Functor.Compose  (Compose (..))
-import Data.Functor.Identity (Identity (..))
-import Data.Tree             (Tree (..))
 import Control.Applicative.Backwards (Backwards (..))
-import Control.Applicative.Lift (Lift (..))
-import Data.Functor.Reverse (Reverse (..))
+import Control.Applicative.Lift      (Lift (..))
+import Data.Functor.Compose          (Compose (..))
+import Data.Functor.Identity         (Identity (..))
+import Data.Functor.Reverse          (Reverse (..))
+import Data.Tree                     (Tree (..))
 
 import qualified Data.Functor.Product as Functor
 import qualified Data.Functor.Sum     as Functor
@@ -409,6 +410,20 @@ instance Foldable1 Tree where
     foldMap1 f (Node x [])       = f x
     foldMap1 f (Node x (y : ys)) = f x <> foldMap1 (foldMap1 f) (y :| ys)
 
+    foldr1map f _ (Node x [])     = f x
+    foldr1map f g (Node x (y:ys)) =
+        g (f x) (foldr1map (foldr1map f g) g (y :| ys))
+
+    foldl1map f g (Node x xs) = goForest (f x) xs where
+        goForest = foldl' go
+        go y (Node z zs) = goForest (g y (f z)) zs
+
+    foldl1'map f g (Node x xs) = goForest (f x) xs where
+        goForest !y = foldl' go y
+        go !y (Node z zs) = goForest (g y (f z)) zs
+
+    head1 (Node x _) = x
+
 instance Foldable1 Identity where
     foldMap1                = coerce
     foldr1 _                = coerce
@@ -434,6 +449,7 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Compose f g) where
     foldMap1 f = foldMap1 (foldMap1 f) . getCompose
+    foldr1map f g = foldr1map (foldr1map f g) g . getCompose
 
 instance Foldable1 f => Foldable1 (Reverse f) where
     foldMap1 f = getDual . foldMap1 (Dual . f) . getReverse
