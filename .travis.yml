@@ -144,8 +144,9 @@ install:
   - node --version
   - echo $GHCJS
   - TEST=--enable-tests
+  - if ! $GHCJS && [ $HCNUMVER -lt 70400 ] ; then TEST=--disable-tests ; fi
   - BENCH=--enable-benchmarks
-  - if ! $GHCJS && { [ $HCNUMVER -lt 70600 ] || [ $HCNUMVER -ge 70800 ] && [ $HCNUMVER -lt 70802 ] || [ $HCNUMVER -ge 80200 ] && [ $HCNUMVER -lt 80202 ]; } ; then BENCH=--disable-benchmarks ; fi
+  - if ! $GHCJS && { [ $HCNUMVER -lt 70400 ] || [ $HCNUMVER -ge 70800 ] && [ $HCNUMVER -lt 70802 ] || [ $HCNUMVER -ge 80200 ] && [ $HCNUMVER -lt 80202 ]; } ; then BENCH=--disable-benchmarks ; fi
   - HEADHACKAGE=false
   - rm -f $CABALHOME/config
   - |
@@ -170,6 +171,7 @@ install:
   - cat $CABALHOME/config
   - rm -fv cabal.project cabal.project.local cabal.project.freeze
   - travis_retry ${CABAL} v2-update -v
+  - if ! $GHCJS && [ $HCNUMVER -ge 80002 ] ; then (cd /tmp && ${CABAL} v2-install $WITHCOMPILER -j2 doctest --constraint='doctest ==0.16.*' | color_cabal_output) ; fi
   # Generate cabal.project
   - rm -rf cabal.project cabal.project.local cabal.project.freeze
   - touch cabal.project
@@ -210,10 +212,14 @@ script:
   # Building with tests and benchmarks...
   # build & run tests, build benchmarks
   - ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output
+  # Testing...
+  - if ! $GHCJS && [ $HCNUMVER -ge 70400 ] ; then ${CABAL} v2-test $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output ; fi
+  # Doctest...
+  - if ! $GHCJS && [ $HCNUMVER -ge 80002 ] ; then (cd ${PKGDIR_foldable1} && doctest  src) ; fi
   # cabal check...
   - (cd ${PKGDIR_foldable1} && ${CABAL} -vnormal check)
   # haddock...
-  - if ! $GHCJS ; then ${CABAL} v2-haddock $WITHCOMPILER --with-haddock $HADDOCK ${TEST} ${BENCH} all | color_cabal_output ; fi
+  - if ! $GHCJS && [ $HCNUMVER -ge 70400 ] ; then ${CABAL} v2-haddock $WITHCOMPILER --with-haddock $HADDOCK ${TEST} ${BENCH} all | color_cabal_output ; fi
   # Building without installed constraints for packages in global-db...
   - rm -f cabal.project.local
   - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks all | color_cabal_output
