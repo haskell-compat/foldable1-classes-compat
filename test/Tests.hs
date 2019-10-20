@@ -98,21 +98,21 @@ foldable1tests name _p = testGroup name
     strictFoldl1 xs g' = foldl1 g xs === foldl1' g xs where
         g = applyFun2 g'
 
-    strictFoldr1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    strictFoldr1Map :: f A -> Fun A [B] -> Fun (A, [B]) [B] -> Property
     strictFoldr1Map xs f' g' = foldr1Map f g xs === foldr1'Map f g xs where
         f = applyFun f'
         g = applyFun2 g'
 
-    strictFoldl1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    strictFoldl1Map :: f A -> Fun A [B] -> Fun ([B], A) [B] -> Property
     strictFoldl1Map xs f' g' = foldl1Map f g xs === foldl1'Map f g xs where
         f = applyFun f'
         g = applyFun2 g'
 
     defaultFoldMap :: f A -> Fun A [B] -> Property
-    defaultFoldMap xs f' = foldMap f xs === foldr1Map f (Data.Semigroup.<>) xs where
+    defaultFoldMap xs f' = foldMap f xs === foldr1Map f (\a m -> f a Data.Semigroup.<> m) xs where
         f = applyFun f'
 
-    defaultFoldr1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    defaultFoldr1Map :: f A -> Fun A [B] -> Fun (A, [B]) [B] -> Property
     defaultFoldr1Map xs f' g'
         = counterexample ("NE: " ++ show ys)
         $ foldr1Map f g xs === foldr1Map f g ys
@@ -121,7 +121,7 @@ foldable1tests name _p = testGroup name
         g = applyFun2 g'
         ys = toNonEmpty xs
 
-    defaultFoldl1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    defaultFoldl1Map :: f A -> Fun A [B] -> Fun ([B], A) [B] -> Property
     defaultFoldl1Map xs f' g'
         = counterexample ("NE: " ++ show ys)
         $ foldl1Map f g xs === foldl1Map f g ys
