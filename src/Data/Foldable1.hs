@@ -67,9 +67,14 @@ import qualified Data.Monoid as Mon
 import Data.Orphans ()
 #endif
 
+#ifdef MIN_VERSION_tagged
+import Data.Tagged (Tagged (..))
+#endif
+
 -- Instances
 import Control.Applicative.Backwards (Backwards (..))
 import Control.Applicative.Lift      (Lift (..))
+import Control.Monad.Trans.Identity  (IdentityT (..))
 import Data.Functor.Compose          (Compose (..))
 import Data.Functor.Identity         (Identity (..))
 import Data.Functor.Reverse          (Reverse (..))
@@ -461,28 +466,6 @@ runNonEmptyDList = ($[]) . unNEDL
 -- Extra instances
 -------------------------------------------------------------------------------
 
-instance Foldable1 Tree where
-    foldMap1 f (Node x [])       = f x
-    foldMap1 f (Node x (y : ys)) = f x <> foldMap1 (foldMap1 f) (y :| ys)
-
-    foldMap1' f = go where
-        go (Node x ys) =
-            foldl' (\m zs -> let gozs = go zs in gozs `seq` m <> gozs) (f x) ys
-
-    -- This is incorrect definition!
-    -- foldr1Map f _ (Node x [])     = f x
-    -- foldr1Map f g (Node x (y:ys)) =
-    --     g (f x) (foldr1Map (foldr1Map f g) g (y :| ys))
-
-    foldl1Map f g (Node x xs) = goForest (f x) xs where
-        goForest = foldl' go
-        go y (Node z zs) = goForest (g y (f z)) zs
-
-    foldl1'Map f g (Node x xs) = goForest (f x) xs where
-        goForest !y = foldl' go y
-        go !y (Node z zs) = goForest (g y (f z)) zs
-
-    head1 (Node x _) = x
 
 instance Foldable1 Identity where
     foldMap1                = coerce
@@ -537,6 +520,37 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Compose f g) where
     head1 = head1 . head1 . getCompose
     last1 = last1 . last1 . getCompose
 
+-------------------------------------------------------------------------------
+-- containers
+-------------------------------------------------------------------------------
+
+instance Foldable1 Tree where
+    foldMap1 f (Node x [])       = f x
+    foldMap1 f (Node x (y : ys)) = f x <> foldMap1 (foldMap1 f) (y :| ys)
+
+    foldMap1' f = go where
+        go (Node x ys) =
+            foldl' (\m zs -> let gozs = go zs in gozs `seq` m <> gozs) (f x) ys
+
+    -- This is incorrect definition!
+    -- foldr1Map f _ (Node x [])     = f x
+    -- foldr1Map f g (Node x (y:ys)) =
+    --     g (f x) (foldr1Map (foldr1Map f g) g (y :| ys))
+
+    foldl1Map f g (Node x xs) = goForest (f x) xs where
+        goForest = foldl' go
+        go y (Node z zs) = goForest (g y (f z)) zs
+
+    foldl1'Map f g (Node x xs) = goForest (f x) xs where
+        goForest !y = foldl' go y
+        go !y (Node z zs) = goForest (g y (f z)) zs
+
+    head1 (Node x _) = x
+
+-------------------------------------------------------------------------------
+-- transformers
+-------------------------------------------------------------------------------
+
 instance Foldable1 f => Foldable1 (Reverse f) where
     foldMap1 f = getDual . foldMap1 (Dual . f) . getReverse
 
@@ -544,12 +558,35 @@ instance Foldable1 f => Foldable1 (Reverse f) where
     -- head1 = last1 . getReverse
     -- last1 = head1 . getReverse
 
+deriving instance Foldable1 f => Foldable1 (IdentityT f)
+
 instance Foldable1 f => Foldable1 (Backwards f) where
     foldMap1 f = foldMap1 f . forwards
 
 instance Foldable1 f => Foldable1 (Lift f) where
     foldMap1 f (Pure x)  = f x
     foldMap1 f (Other y) = foldMap1 f y
+
+-------------------------------------------------------------------------------
+-- tagged
+-------------------------------------------------------------------------------
+
+#ifdef MIN_VERSION_tagged
+instance Foldable1 (Tagged b) where
+    foldMap1                = coerce
+
+    foldr1 _                = coerce
+    foldr1Map g _           = coerce g
+    foldl1 _                = coerce
+    foldl1Map g _           = coerce g
+
+    toNonEmpty (Tagged x) = x :| []
+
+    last1    = coerce
+    head1    = coerce
+    minimum1 = coerce
+    maximum1 = coerce
+#endif
 
 -- $setup
 -- >>> import Prelude hiding (foldr1, foldl1)
