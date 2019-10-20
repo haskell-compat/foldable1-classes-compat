@@ -53,13 +53,13 @@ foldable1tests name _p = testGroup name
 
     , testProperty "foldl1 non/strict" $ smaller strictFoldl1
     , testProperty "foldr1 non/strict" $ smaller strictFoldr1
-    , testProperty "foldl1map non/strict" $ smaller strictFoldl1map
-    , testProperty "foldr1map non/strict" $ smaller strictFoldr1map
+    , testProperty "foldl1Map non/strict" $ smaller strictFoldl1Map
+    , testProperty "foldr1Map non/strict" $ smaller strictFoldr1Map
 
     -- test against default implementations
     , testProperty "foldMap1 default" defaultFoldMap
-    , testProperty "foldr1map default" $ smaller defaultFoldr1map
-    , testProperty "foldl1map default" $ smaller defaultFoldl1map
+    , testProperty "foldr1Map default" $ smaller defaultFoldr1Map
+    , testProperty "foldl1Map default" $ smaller defaultFoldl1Map
     , testProperty "toNonEmpty default" defaultToNonEmpty
 
     , testProperty "head1 default" defaultHead1
@@ -98,33 +98,33 @@ foldable1tests name _p = testGroup name
     strictFoldl1 xs g' = foldl1 g xs === foldl1' g xs where
         g = applyFun2 g'
 
-    strictFoldr1map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
-    strictFoldr1map xs f' g' = foldr1map f g xs === foldr1'map f g xs where
+    strictFoldr1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    strictFoldr1Map xs f' g' = foldr1Map f g xs === foldr1'Map f g xs where
         f = applyFun f'
         g = applyFun2 g'
 
-    strictFoldl1map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
-    strictFoldl1map xs f' g' = foldl1map f g xs === foldl1'map f g xs where
+    strictFoldl1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    strictFoldl1Map xs f' g' = foldl1Map f g xs === foldl1'Map f g xs where
         f = applyFun f'
         g = applyFun2 g'
 
     defaultFoldMap :: f A -> Fun A [B] -> Property
-    defaultFoldMap xs f' = foldMap f xs === foldr1map f (Data.Semigroup.<>) xs where
+    defaultFoldMap xs f' = foldMap f xs === foldr1Map f (Data.Semigroup.<>) xs where
         f = applyFun f'
 
-    defaultFoldr1map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
-    defaultFoldr1map xs f' g'
+    defaultFoldr1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    defaultFoldr1Map xs f' g'
         = counterexample ("NE: " ++ show ys)
-        $ foldr1map f g xs === foldr1map f g ys
+        $ foldr1Map f g xs === foldr1Map f g ys
       where
         f = applyFun f'
         g = applyFun2 g'
         ys = toNonEmpty xs
 
-    defaultFoldl1map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
-    defaultFoldl1map xs f' g'
+    defaultFoldl1Map :: f A -> Fun A [B] -> Fun ([B], [B]) [B] -> Property
+    defaultFoldl1Map xs f' g'
         = counterexample ("NE: " ++ show ys)
-        $ foldl1map f g xs === foldl1map f g ys
+        $ foldl1Map f g xs === foldl1Map f g ys
       where
         f = applyFun f'
         g = applyFun2 g'
