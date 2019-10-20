@@ -223,6 +223,10 @@ script:
   # Building without installed constraints for packages in global-db...
   - rm -f cabal.project.local
   - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks all | color_cabal_output
+  # Constraint sets
+  - rm -rf cabal.project.local
+  # Constraint set no-tagged
+  - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --constraint='foldable1 -tagged' all | color_cabal_output
 
 # REGENDATA ["--config=cabal.haskell-ci","foldable1.cabal"]
 # EOF
