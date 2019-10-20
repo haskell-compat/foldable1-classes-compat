@@ -1,5 +1,5 @@
 cabal-version: >=1.10
-name:          foldable1
+name:          semifoldable
 version:       0.2
 synopsis:
   Class of non-empty data structures that can be folded to a summary value.
@@ -7,13 +7,13 @@ synopsis:
 description:
   Class of non-empty data structures that can be folded to a summary value.
   .
-  A compatibility package for @Foldable1@ class which will be in base-4.??
+  A compatibility package for @Semifoldable@ class which will be in base-4.??
 
 license:       BSD3
 maintainer:    Oleg Grenrus <oleg.grenrus@iki.fi>
 author:        Edward Kmett, Oleg Grenrus
-homepage:      https://github.com/phadej/foldable1
-bug-reports:   https://github.com/phadej/foldable1/issues
+homepage:      https://github.com/phadej/semifoldable
+bug-reports:   https://github.com/phadej/semifoldable/issues
 category:      Data, Compatibility
 license-file:  LICENSE
 build-type:    Simple
@@ -23,7 +23,7 @@ tested-with:
 
 source-repository head
   type:     git
-  location: https://github.com/phadej/foldable1.git
+  location: https://github.com/phadej/semifoldable.git
 
 flag tagged
   description:
@@ -37,7 +37,7 @@ flag tagged
 library
   default-language: Haskell2010
   hs-source-dirs:   src
-  exposed-modules:  Data.Foldable1
+  exposed-modules:  Data.Semifoldable
   build-depends:
       base          >=4.3 && <4.14
     , containers    >=0.4 && <0.7
@@ -70,7 +70,7 @@ test-suite test
   build-depends:
       base
     , containers
-    , foldable1
+    , semifoldable
     , transformers
 
   if !impl(ghc >=8.0)
@@ -96,7 +96,7 @@ benchmark bench
   build-depends:
       base
     , containers
-    , foldable1
+    , semifoldable
     , transformers
 
   if !impl(ghc >=8.0)

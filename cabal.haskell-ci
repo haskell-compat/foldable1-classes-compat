@@ -5,4 +5,4 @@ tests: >= 7.4
 benchmarks: >= 7.4 && (<7.8.1 || >7.8.1) && (<8.2.1 || >8.2.1)
 
 constraint-set no-tagged
-  constraints: foldable1 -tagged
+  constraints: semifoldable -tagged
