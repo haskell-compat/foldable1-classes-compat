@@ -70,6 +70,7 @@ import Data.Orphans ()
 -- Instances
 import Control.Applicative.Backwards (Backwards (..))
 import Control.Applicative.Lift      (Lift (..))
+import Control.Monad.Trans.Identity  (IdentityT (..))
 import Data.Functor.Compose          (Compose (..))
 import Data.Functor.Identity         (Identity (..))
 import Data.Functor.Reverse          (Reverse (..))
@@ -543,6 +544,8 @@ instance Foldable1 f => Foldable1 (Reverse f) where
     -- TODO:
     -- head1 = last1 . getReverse
     -- last1 = head1 . getReverse
+
+deriving instance Foldable1 f => Foldable1 (IdentityT f)
 
 instance Foldable1 f => Foldable1 (Backwards f) where
     foldMap1 f = foldMap1 f . forwards
