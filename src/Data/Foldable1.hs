@@ -43,8 +43,8 @@ import Data.Semigroup
        (Dual (..), First (..), Last (..), Max (..), Min (..), Product (..),
        Semigroup (..), Sum (..))
 import Prelude
-       (Maybe (..), Monad (..), Ord, Ordering (..), id, map, seq, ($), ($!),
-       (.), (=<<))
+       (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($), ($!), (.),
+       (=<<))
 
 import qualified Data.List.NonEmpty as NE
 
@@ -132,7 +132,7 @@ class Foldable t => Foldable1 t where
     -- Sum {getSum = 10}
     --
     foldMap1 :: Semigroup m => (a -> m) -> t a -> m
-    foldMap1 f = foldr1Map f (<>)
+    foldMap1 f = foldr1Map f (\a m -> f a <> m)
 
     -- | A variant of 'foldMap1' that is strict in the accumulator.
     --
@@ -140,7 +140,7 @@ class Foldable t => Foldable1 t where
     -- Sum {getSum = 10}
     --
     foldMap1' :: Semigroup m => (a -> m) -> t a -> m
-    foldMap1' f = foldl1'Map f (<>)
+    foldMap1' f = foldl1'Map f (\m a -> m <> f a)
 
     -- | Right-associative fold of a structure.
     --
@@ -252,36 +252,44 @@ class Foldable t => Foldable1 t where
     last1 = getLast . foldMap1 Last
 
     -- | For 'Functor's, @'foldr1Map' f g = foldr1 g . 'fmap' g@.
-    foldr1Map :: (a -> b) -> (b -> b -> b) -> t a -> b
+    foldr1Map :: (a -> b) -> (a -> b -> b) -> t a -> b
     foldr1Map f g xs =
         -- foldr1Map f g . toNonEmpty
         appFromMaybe (foldMap1 (FromMaybe #. h) xs) Nothing
       where
         h a Nothing  = f a
-        h a (Just b) = g (f a) b
+        h a (Just b) = g a b
 
     -- | For 'Functor's, @'foldl1'Map' f g = foldl1' g . 'fmap' g@.
-    foldl1'Map :: (a -> b) -> (b -> b -> b) -> t a -> b
-    foldl1'Map f g xs = foldr1Map f' (\x y z -> y $! SJust (x z)) xs SNothing
+    foldl1'Map :: (a -> b) -> (b -> a -> b) -> t a -> b
+    foldl1'Map f g xs = foldr1Map f' g' xs SNothing
       where
+        -- g' :: a -> (SMaybe b -> b) -> SMaybe b -> b
+        g' a x SNothing  = x $! SJust (f a)
+        g' a x (SJust b) = x $! SJust (g b a)
+
+        -- f' :: a -> SMaybe b -> b
         f' a SNothing  = f a
-        f' a (SJust b) = g b (f a)
+        f' a (SJust b) = g b a
 
     -- | For 'Functor's, @'foldl1Map' f g = foldl1 g . 'fmap' g@.
-    foldl1Map :: (a -> b) -> (b -> b -> b) -> t a -> b
+    foldl1Map :: (a -> b) -> (b -> a -> b) -> t a -> b
     foldl1Map f g xs =
         -- foldl1Map f g . toNonEmpty
         appFromMaybe (getDual (foldMap1 ((Dual . FromMaybe) #. h) xs)) Nothing
       where
         h a Nothing  = f a
-        h a (Just b) = g b (f a)
+        h a (Just b) = g b a
 
     -- | For 'Functor's, @'foldr1'Map' f g = foldr1' g . 'fmap' g@.
-    foldr1'Map :: (a -> b) -> (b -> b -> b) -> t a -> b
-    foldr1'Map f g xs = foldl1Map f' (\x y z -> x $! SJust (y z)) xs SNothing
+    foldr1'Map :: (a -> b) -> (a -> b -> b) -> t a -> b
+    foldr1'Map f g xs = foldl1Map f' g' xs SNothing
       where
+        g' x a SNothing  = x $! SJust (f a)
+        g' x a (SJust b) = x $! SJust (g a b)
+
         f' a SNothing  = f a
-        f' a (SJust b) = g (f a) b
+        f' a (SJust b) = g a b
 
 -- Newtypes for foldr1Map and foldl1Map definitions.
 -- c.f. Endo
@@ -309,14 +317,14 @@ instance Foldable1 NonEmpty where
         go y (z : zs) = f y (go z zs)
 
     foldr1Map g f (x :| xs) = go x xs where
-        go y [] = g y
-        go y (z : zs) = f (g y) (go z zs)
+        go y []       = g y
+        go y (z : zs) = f y (go z zs)
 
     foldl1 f (x :| xs) = foldl f x xs
-    foldl1Map g f (x :| xs) = foldl f (g x) (map g xs)
+    foldl1Map g f (x :| xs) = foldl f (g x) xs
 
     foldl1' f (x :| xs) = foldl' f x xs
-    foldl1'Map g f (x :| xs) = foldl' f (g x) (map g xs)
+    foldl1'Map g f (x :| xs) = foldl' f (g x) xs
 
     head1 = NE.head
     last1 = NE.last
@@ -484,7 +492,7 @@ instance Foldable1 Identity where
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Product f g) where
     foldMap1 f (Functor.Pair x y)    = foldMap1 f x <> foldMap1 f y
-    foldr1Map g f (Functor.Pair x y) = foldr (f . g) (foldr1Map g f y) x
+    foldr1Map g f (Functor.Pair x y) = foldr f (foldr1Map g f y) x
 
     head1 (Functor.Pair x _) = head1 x
     last1 (Functor.Pair _ y) = last1 y
@@ -539,11 +547,11 @@ instance Foldable1 Tree where
 
     foldl1Map f g (Node x xs) = goForest (f x) xs where
         goForest = foldl' go
-        go y (Node z zs) = goForest (g y (f z)) zs
+        go y (Node z zs) = goForest (g y z) zs
 
     foldl1'Map f g (Node x xs) = goForest (f x) xs where
         goForest !y = foldl' go y
-        go !y (Node z zs) = goForest (g y (f z)) zs
+        go !y (Node z zs) = goForest (g y z) zs
 
     head1 (Node x _) = x
 
