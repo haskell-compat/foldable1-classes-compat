@@ -45,16 +45,21 @@ import Data.Semigroup
        (Dual (..), First (..), Last (..), Max (..), Min (..), Product (..),
        Semigroup (..), Sum (..))
 import Prelude
-       (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($), ($!), (.),
-       (=<<))
+       (Maybe (..), Monad (..), Ord, Ordering (..), error, id, seq, ($), ($!),
+       (.), (=<<))
 
 import qualified Data.List.NonEmpty as NE
 
-#if MIN_VERSION_base(4,4,0)
-import Data.Complex (Complex (..))
+#ifdef MIN_VERSION_generic_deriving
+import Generics.Deriving.Base
+       ((:*:) (..), (:+:) (..), (:.:) (..), M1 (..), Par1 (..), Rec1 (..), V1)
+#else
 import GHC.Generics
        ((:*:) (..), (:+:) (..), (:.:) (..), M1 (..), Par1 (..), Rec1 (..), V1)
-import Prelude      (error)
+#endif
+
+#if MIN_VERSION_base(4,4,0)
+import Data.Complex (Complex (..))
 #endif
 
 #if MIN_VERSION_base(4,6,0)
@@ -382,7 +387,6 @@ instance Semifoldable Complex where
 
 -- Instances for GHC.Generics
 
-#if MIN_VERSION_base(4,4,0)
 instance Semifoldable V1 where
     semifoldMap _ x = x `seq` error "semifoldMap @V1"
 
@@ -402,7 +406,6 @@ instance (Semifoldable f, Semifoldable g) => Semifoldable (f :*: g) where
 
 instance (Semifoldable f, Semifoldable g) => Semifoldable (f :.: g) where
     semifoldMap f = semifoldMap (semifoldMap f) . unComp1
-#endif
 
 -- | Insert an @m@ between each pair of @t m@.
 --
