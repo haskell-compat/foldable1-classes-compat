@@ -14,3 +14,9 @@ bench-tree : phony
 
 haddock :
 	cabal haddock --haddock-hyperlink-source
+
+proposal2.html : proposal2.md
+	pandoc --metadata "pagetitle=Foldable1 proposal" -s proposal2.md -o proposal2.html
+
+proposal3.html : proposal3.md
+	pandoc --metadata "pagetitle=Foldable1 proposal" -s proposal3.md -o proposal3.html

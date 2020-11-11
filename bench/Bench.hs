@@ -3,6 +3,8 @@
 {-# OPTIONS_GHC -Wall #-}
 module Main (main) where
 
+import Prelude hiding (foldl1, head, last, maximum)
+
 import Control.DeepSeq    (NFData (..))
 import Criterion.Main
 import Data.Foldable      (Foldable)
@@ -10,7 +12,6 @@ import Data.Foldable1
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup     (Min (..))
 import Data.Tree          (Tree (..))
-import Prelude            hiding (foldl1)
 
 input :: NonEmpty Int
 input = 1 :| take 10000000 [2 .. ]
@@ -30,7 +31,7 @@ main = defaultMain
         , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) ne
         , bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
-        , bench "foldl'Map1 id min" $ whnf (foldl'Map1 id min) ne
+        , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) ne
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) ne
         ]
     , env (return $ NE1 input) $ \ne -> bgroup "NonEmpty-foldMap1"
@@ -38,7 +39,7 @@ main = defaultMain
         , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) ne
         , bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
-        , bench "foldl'Map1 id min" $ whnf (foldl'Map1 id min) ne
+        , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) ne
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) ne
         ]
     , env (return $ NE3 input) $ \ne -> bgroup "NonEmpty-foldrMap1"
@@ -46,48 +47,48 @@ main = defaultMain
         , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) ne
         , bench "foldl1' min"       $ whnf (foldl1' min) ne
         , bench "foldl1 min"        $ whnf (foldl1 min) ne
-        , bench "foldl'Map1 id min" $ whnf (foldl'Map1 id min) ne
+        , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) ne
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) ne
         ]
 
     -- Trees
     , env (return tree) $ \tr -> bgroup "Tree-vanilla"
-        [ bench "head1" $ whnf head1 tr
-        , bench "last1" $ whnf last1 tr
-        , bench "maximum1" $ whnf maximum1 tr
-        , bench "maximum1'" $ whnf (foldl1' max) tr
+        [ bench "head" $ whnf head tr
+        , bench "last" $ whnf last tr
+        , bench "maximum" $ whnf maximum tr
+        , bench "maximum'" $ whnf (foldl1' max) tr
 
         , bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) tr
         , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) tr
         , bench "foldl1' min"       $ whnf (foldl1' min) tr
         , bench "foldl1 min"        $ whnf (foldl1 min) tr
-        , bench "foldl'Map1 id min" $ whnf (foldl'Map1 id min) tr
+        , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) tr
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) tr
         ]
     , env (return $ Tree1 tree) $ \tr -> bgroup "Tree-foldMap1"
-        [ bench "head1" $ whnf head1 tr
-        , bench "last1" $ whnf last1 tr
-        , bench "maximum1" $ whnf maximum1 tr
-        , bench "maximum1'" $ whnf (foldl1' max) tr
+        [ bench "head" $ whnf head tr
+        , bench "last" $ whnf last tr
+        , bench "maximum" $ whnf maximum tr
+        , bench "maximum'" $ whnf (foldl1' max) tr
 
         , bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) tr
         , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) tr
         , bench "foldl1' min"       $ whnf (foldl1' min) tr
         , bench "foldl1 min"        $ whnf (foldl1 min) tr
-        , bench "foldl'Map1 id min" $ whnf (foldl'Map1 id min) tr
+        , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) tr
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) tr
         ]
-    , env (return $ Tree3 tree) $ \tr -> bgroup "Tree-foldrMap1"
-        [ bench "head1" $ whnf head1 tr
-        , bench "last1" $ whnf last1 tr
-        , bench "maximum1" $ whnf maximum1 tr
-        , bench "maximum1'" $ whnf (foldl1' max) tr
+    , env (return $ Tree3 tree) $ \tr -> bgroup "Tree-foldr1Map"
+        [ bench "head" $ whnf head tr
+        , bench "last" $ whnf last tr
+        , bench "maximum" $ whnf maximum tr
+        , bench "maximum'" $ whnf (foldl1' max) tr
 
         , bench "foldMap1 Min"      $ whnf (getMin . foldMap1 Min) tr
         , bench "foldMap1' Min"     $ whnf (getMin . foldMap1' Min) tr
         , bench "foldl1' min"       $ whnf (foldl1' min) tr
         , bench "foldl1 min"        $ whnf (foldl1 min) tr
-        , bench "foldl'Map1 id min" $ whnf (foldl'Map1 id min) tr
+        , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) tr
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) tr
         ]
     ]

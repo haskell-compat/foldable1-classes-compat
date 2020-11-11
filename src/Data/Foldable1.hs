@@ -7,26 +7,15 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeOperators              #-}
 
+#if __GLASGOW_HASKELL__ >=706
+{-# LANGUAGE PolyKinds #-}
+#endif
+
 #if __GLASGOW_HASKELL__ >=702
 {-# LANGUAGE Trustworthy                #-}
 #endif
 
-{-# OPTIONS_GHC -Wall -Werror #-}
-
------------------------------------------------------------------------------
--- |
--- Module      :  Data.Foldable1
--- Copyright   :  Edward Kmett
--- License     :  BSD-style (see the LICENSE file in the distribution)
---
--- Maintainer  :  libraries@haskell.org
--- Stability   :  experimental
--- Portability :  portable
---
--- class of non-empty data structures that can be folded to a summary value.
---
------------------------------------------------------------------------------
-
+-- | A class of non-empty data structures that can be folded to a summary value.
 module Data.Foldable1 (
     Foldable1(..),
     intercalate1,
@@ -34,8 +23,8 @@ module Data.Foldable1 (
     foldlM1,
     foldrMapM1,
     foldlMapM1,
-    maximum1By,
-    minimum1By,
+    maximumBy,
+    minimumBy,
     ) where
 
 import Data.Foldable      (Foldable, foldlM, foldr)
@@ -45,7 +34,7 @@ import Data.Semigroup
        (Dual (..), First (..), Last (..), Max (..), Min (..), Product (..),
        Semigroup (..), Sum (..))
 import Prelude
-       (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($), ($!), (.),
+       (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($!), ($), (.),
        (=<<))
 
 import qualified Data.List.NonEmpty as NE
@@ -53,7 +42,7 @@ import qualified Data.List.NonEmpty as NE
 #if MIN_VERSION_base(4,4,0)
 import Data.Complex (Complex (..))
 import GHC.Generics
-       ((:*:) (..), (:+:) (..), (:.:) (..), M1 (..), Par1 (..), Rec1 (..), V1)
+       (M1 (..), Par1 (..), Rec1 (..), V1, (:*:) (..), (:+:) (..), (:.:) (..))
 import Prelude      (error)
 #endif
 
@@ -92,16 +81,12 @@ import Unsafe.Coerce (unsafeCoerce)
 import Data.Coerce (Coercible, coerce)
 #endif
 
-#if __GLASGOW_HASKELL__ <708
-coerce :: a -> b
-coerce = unsafeCoerce
+-- $setup
+-- >>> import Prelude hiding (foldr1, foldl1, head, last, minimum, maximum)
 
-(#.) :: (b -> c) -> (a -> b) -> a -> c
-(#.) _f = coerce
-#else
-(#.) :: Coercible b c => (b -> c) -> (a -> b) -> a -> c
-(#.) _f = coerce
-#endif
+-------------------------------------------------------------------------------
+-- Foldable1 type class
+-------------------------------------------------------------------------------
 
 -- | Non-empty data structures that can be folded.
 class Foldable t => Foldable1 t where
@@ -142,7 +127,7 @@ class Foldable t => Foldable1 t where
     -- Sum {getSum = 10}
     --
     foldMap1' :: Semigroup m => (a -> m) -> t a -> m
-    foldMap1' f = foldl'Map1 f (\m a -> m <> f a)
+    foldMap1' f = foldlMap1' f (\m a -> m <> f a)
 
     -- | Right-associative fold of a structure.
     --
@@ -168,7 +153,7 @@ class Foldable t => Foldable1 t where
     -- the operator.
     --
     foldr1' :: (a -> a -> a) -> t a -> a
-    foldr1' = foldr'Map1 id
+    foldr1' = foldrMap1' id
 
     -- | Left-associative fold of a structure.
     --
@@ -211,7 +196,7 @@ class Foldable t => Foldable1 t where
     -- @foldl1' f z = foldl1 f . 'toNonEmpty'@
     --
     foldl1' :: (a -> a -> a) -> t a -> a
-    foldl1' = foldl'Map1 id
+    foldl1' = foldlMap1' id
 
     -- | List of elements of a structure, from left to right.
     --
@@ -223,187 +208,75 @@ class Foldable t => Foldable1 t where
 
     -- | The largest element of a non-empty structure.
     --
-    -- >>> maximum1 (32 :| [64, 8, 128, 16])
+    -- >>> maximum (32 :| [64, 8, 128, 16])
     -- 128
     --
-    maximum1 :: forall a . Ord a => t a -> a
-    maximum1 = getMax . foldMap1 Max
+    maximum :: Ord a => t a -> a
+    maximum = getMax . foldMap1 Max
 
     -- | The least element of a non-empty structure.
     --
-    -- >>> minimum1 (32 :| [64, 8, 128, 16])
+    -- >>> minimum (32 :| [64, 8, 128, 16])
     -- 8
     --
-    minimum1 :: forall a . Ord a => t a -> a
-    minimum1 = getMin . foldMap1 Min
+    minimum :: Ord a => t a -> a
+    minimum = getMin . foldMap1 Min
 
     -- | The first element of a non-empty structure.
     --
-    -- >>> head1 (1 :| [2, 3, 4])
+    -- >>> head (1 :| [2, 3, 4])
     -- 1
     --
-    head1 :: t a -> a
-    head1 = getFirst . foldMap1 First
+    head :: t a -> a
+    head = getFirst . foldMap1 First
 
     -- | The last element of a non-empty structure.
     --
-    -- >>> last1 (1 :| [2, 3, 4])
+    -- >>> last (1 :| [2, 3, 4])
     -- 4
     --
-    last1 :: t a -> a
-    last1 = getLast . foldMap1 Last
+    last :: t a -> a
+    last = getLast . foldMap1 Last
 
-    -- | For 'Functor's, @'foldrMap1' f g = foldr1 g . 'fmap' g@.
     foldrMap1 :: (a -> b) -> (a -> b -> b) -> t a -> b
     foldrMap1 f g xs =
-        -- foldrMap1 f g . toNonEmpty
         appFromMaybe (foldMap1 (FromMaybe #. h) xs) Nothing
       where
         h a Nothing  = f a
         h a (Just b) = g a b
 
-    -- | For 'Functor's, @'foldl'Map1' f g = foldl1' g . 'fmap' g@.
-    foldl'Map1 :: (a -> b) -> (b -> a -> b) -> t a -> b
-    foldl'Map1 f g xs = foldrMap1 f' g' xs SNothing
+    foldlMap1' :: (a -> b) -> (b -> a -> b) -> t a -> b
+    foldlMap1' f g xs =
+        foldrMap1 f' g' xs SNothing
       where
-        -- g' :: a -> (SMaybe b -> b) -> SMaybe b -> b
-        g' a x SNothing  = x $! SJust (f a)
-        g' a x (SJust b) = x $! SJust (g b a)
-
         -- f' :: a -> SMaybe b -> b
         f' a SNothing  = f a
         f' a (SJust b) = g b a
 
-    -- | For 'Functor's, @'foldlMap1' f g = foldl1 g . 'fmap' g@.
+        -- g' :: a -> (SMaybe b -> b) -> SMaybe b -> b
+        g' a x SNothing  = x $! SJust (f a)
+        g' a x (SJust b) = x $! SJust (g b a)
+
     foldlMap1 :: (a -> b) -> (b -> a -> b) -> t a -> b
     foldlMap1 f g xs =
-        -- foldlMap1 f g . toNonEmpty
         appFromMaybe (getDual (foldMap1 ((Dual . FromMaybe) #. h) xs)) Nothing
       where
         h a Nothing  = f a
         h a (Just b) = g b a
 
-    -- | For 'Functor's, @'foldr'Map1' f g = foldr1' g . 'fmap' g@.
-    foldr'Map1 :: (a -> b) -> (a -> b -> b) -> t a -> b
-    foldr'Map1 f g xs = foldlMap1 f' g' xs SNothing
+    foldrMap1' :: (a -> b) -> (a -> b -> b) -> t a -> b
+    foldrMap1' f g xs =
+        foldlMap1 f' g' xs SNothing
       where
-        g' x a SNothing  = x $! SJust (f a)
-        g' x a (SJust b) = x $! SJust (g a b)
-
         f' a SNothing  = f a
         f' a (SJust b) = g a b
 
--- Newtypes for foldrMap1 and foldlMap1 definitions.
--- c.f. Endo
-newtype FromMaybe b = FromMaybe { appFromMaybe :: Maybe b -> b }
+        g' bb a SNothing  = bb $! SJust (f a)
+        g' bb a (SJust b) = bb $! SJust (g a b) 
 
-instance Semigroup (FromMaybe b) where
-    FromMaybe f <> FromMaybe g = FromMaybe (f . Just . g)
-
--- Strict maybe, used to implement default foldl'Map1 etc.
-data SMaybe a = SNothing | SJust !a
-
--- instances for Prelude types
-
-instance Foldable1 NonEmpty where
-    foldMap1 f (x :| xs) = go (f x) xs where
-        go y [] = y
-        go y (z : zs) = y <> go (f z) zs
-
-    foldMap1' f (x :| xs) = foldl' (\m y -> m <> f y) (f x) xs
-
-    toNonEmpty = id
-
-    foldr1 f (x :| xs) = go x xs where
-        go y [] = y
-        go y (z : zs) = f y (go z zs)
-
-    foldrMap1 g f (x :| xs) = go x xs where
-        go y []       = g y
-        go y (z : zs) = f y (go z zs)
-
-    foldl1 f (x :| xs) = foldl f x xs
-    foldlMap1 g f (x :| xs) = foldl f (g x) xs
-
-    foldl1' f (x :| xs) = foldl' f x xs
-    foldl'Map1 g f (x :| xs) = foldl' f (g x) xs
-
-    head1 = NE.head
-    last1 = NE.last
-
-instance Foldable1 ((,) a) where
-    foldMap1 f (_, y) = f y
-    foldr1 _ (_, y) = y
-    toNonEmpty (_, x) = x :| []
-    minimum1 (_, x) = x
-    maximum1 (_, x) = x
-    head1 (_, x) = x
-    last1 (_, x) = x
-
-instance Foldable1 Dual where
-    foldMap1 = coerce
-
-instance Foldable1 Sum where
-    foldMap1 = coerce
-
-instance Foldable1 Product where
-    foldMap1 = coerce
-
-instance Foldable1 Min where
-    foldMap1 = coerce
-
-instance Foldable1 Max where
-    foldMap1 = coerce
-
-instance Foldable1 First where
-    foldMap1 = coerce
-
-instance Foldable1 Last where
-    foldMap1 = coerce
-
-#if MIN_VERSION_base(4,6,0)
-instance Foldable1 Down where
-    foldMap1 = coerce
-#endif
-
-#if MIN_VERSION_base(4,8,0)
-deriving instance (Foldable1 f) => Foldable1 (Mon.Alt f)
-#endif
-
-#if MIN_VERSION_base(4,12,0)
-deriving instance (Foldable1 f) => Foldable1 (Mon.Ap f)
-#endif
-
-#if MIN_VERSION_base(4,4,0)
-instance Foldable1 Complex where
-    foldMap1 f (x :+ y) = f x <> f y
-
-    toNonEmpty (x :+ y) = x :| y : []
-#endif
-
--- Instances for GHC.Generics
-
-#if MIN_VERSION_base(4,4,0)
-instance Foldable1 V1 where
-    foldMap1 _ x = x `seq` error "foldMap1 @V1"
-
-instance Foldable1 Par1 where
-    foldMap1 = coerce
-
-deriving instance Foldable1 f => Foldable1 (Rec1 f)
-
-deriving instance Foldable1 f => Foldable1 (M1 i c f)
-
-instance (Foldable1 f, Foldable1 g) => Foldable1 (f :+: g) where
-    foldMap1 f (L1 x) = foldMap1 f x
-    foldMap1 f (R1 y) = foldMap1 f y
-
-instance (Foldable1 f, Foldable1 g) => Foldable1 (f :*: g) where
-    foldMap1 f (x :*: y) = foldMap1 f x <> foldMap1 f y
-
-instance (Foldable1 f, Foldable1 g) => Foldable1 (f :.: g) where
-    foldMap1 f = foldMap1 (foldMap1 f) . unComp1
-#endif
+-------------------------------------------------------------------------------
+-- Combinators
+-------------------------------------------------------------------------------
 
 -- | Insert an @m@ between each pair of @t m@.
 --
@@ -447,8 +320,8 @@ foldlMapM1 g f t = g x >>= \y -> foldlM f y xs
 -- given comparison function.
 
 -- See Note [maximumBy/minimumBy space usage]
-maximum1By :: Foldable1 t => (a -> a -> Ordering) -> t a -> a
-maximum1By cmp = foldl1 max'
+maximumBy :: Foldable1 t => (a -> a -> Ordering) -> t a -> a
+maximumBy cmp = foldl1 max'
   where max' x y = case cmp x y of
                         GT -> x
                         _  -> y
@@ -457,14 +330,17 @@ maximum1By cmp = foldl1 max'
 -- given comparison function.
 
 -- See Note [maximumBy/minimumBy space usage]
-minimum1By :: Foldable1 t => (a -> a -> Ordering) -> t a -> a
-minimum1By cmp = foldl1 min'
+minimumBy :: Foldable1 t => (a -> a -> Ordering) -> t a -> a
+minimumBy cmp = foldl1 min'
   where min' x y = case cmp x y of
                         GT -> y
                         _  -> x
 
--- NonEmptyDList
+-------------------------------------------------------------------------------
+-- Auxiliary types
+-------------------------------------------------------------------------------
 
+-- | Used for default toNonEmpty implementation.
 newtype NonEmptyDList a = NEDL { unNEDL :: [a] -> NonEmpty a }
 
 instance Semigroup (NonEmptyDList a) where
@@ -480,10 +356,134 @@ runNonEmptyDList :: NonEmptyDList a -> NonEmpty a
 runNonEmptyDList = ($[]) . unNEDL
 {-# INLINE runNonEmptyDList #-}
 
+-- | Used for foldrMap1 and foldlMap1 definitions
+newtype FromMaybe b = FromMaybe { appFromMaybe :: Maybe b -> b }
+
+instance Semigroup (FromMaybe b) where
+    FromMaybe f <> FromMaybe g = FromMaybe (f . Just . g)
+
+-- | Strict maybe, used to implement default foldlMap1' etc.
+data SMaybe a = SNothing | SJust !a
+
+-------------------------------------------------------------------------------
+-- Instances for misc base types
+-------------------------------------------------------------------------------
+
+instance Foldable1 NonEmpty where
+    foldMap1 f (x :| xs) = go (f x) xs where
+        go y [] = y
+        go y (z : zs) = y <> go (f z) zs
+
+    foldMap1' f (x :| xs) = foldl' (\m y -> m <> f y) (f x) xs
+
+    toNonEmpty = id
+
+    foldr1 f (x :| xs) = go x xs where
+        go y [] = y
+        go y (z : zs) = f y (go z zs)
+
+    foldrMap1 g f (x :| xs) = go x xs where
+        go y [] = g y
+        go y (z : zs) = f y (go z zs)
+
+    foldl1 f (x :| xs) = foldl f x xs
+    foldlMap1 g f (x :| xs) = foldl f (g x) xs
+
+    foldl1' f (x :| xs) = foldl' f x xs
+    foldlMap1' g f (x :| xs) = foldl' f (g x) xs
+
+    head = NE.head
+    last = NE.last
+
+#if MIN_VERSION_base(4,6,0)
+instance Foldable1 Down where
+    foldMap1 = coerce
+#endif
+
+#if MIN_VERSION_base(4,4,0)
+instance Foldable1 Complex where
+    foldMap1 f (x :+ y) = f x <> f y
+
+    toNonEmpty (x :+ y) = x :| y : []
+#endif
+
+-------------------------------------------------------------------------------
+-- Instances for tuples
+-------------------------------------------------------------------------------
+
+-- 3+ tuples are not Foldable/Traversable
+
+instance Foldable1 ((,) a) where
+    foldMap1 f (_, y) = f y
+    foldr1 _ (_, y) = y
+    toNonEmpty (_, x) = x :| []
+    minimum (_, x) = x
+    maximum (_, x) = x
+    head (_, x) = x
+    last (_, x) = x
+
+-------------------------------------------------------------------------------
+-- Monoid / Semigroup instances
+-------------------------------------------------------------------------------
+
+instance Foldable1 Dual where
+    foldMap1 = coerce
+
+instance Foldable1 Sum where
+    foldMap1 = coerce
+
+instance Foldable1 Product where
+    foldMap1 = coerce
+
+instance Foldable1 Min where
+    foldMap1 = coerce
+
+instance Foldable1 Max where
+    foldMap1 = coerce
+
+instance Foldable1 First where
+    foldMap1 = coerce
+
+instance Foldable1 Last where
+    foldMap1 = coerce
+
+#if MIN_VERSION_base(4,8,0)
+deriving instance (Foldable1 f) => Foldable1 (Mon.Alt f)
+#endif
+
+#if MIN_VERSION_base(4,12,0)
+deriving instance (Foldable1 f) => Foldable1 (Mon.Ap f)
+#endif
+
+-------------------------------------------------------------------------------
+-- GHC.Generics instances
+-------------------------------------------------------------------------------
+
+#if MIN_VERSION_base(4,4,0)
+instance Foldable1 V1 where
+    foldMap1 _ x = x `seq` error "foldMap1 @V1"
+
+instance Foldable1 Par1 where
+    foldMap1 = coerce
+
+deriving instance Foldable1 f => Foldable1 (Rec1 f)
+
+deriving instance Foldable1 f => Foldable1 (M1 i c f)
+
+instance (Foldable1 f, Foldable1 g) => Foldable1 (f :+: g) where
+    foldMap1 f (L1 x) = foldMap1 f x
+    foldMap1 f (R1 y) = foldMap1 f y
+
+instance (Foldable1 f, Foldable1 g) => Foldable1 (f :*: g) where
+    foldMap1 f (x :*: y) = foldMap1 f x <> foldMap1 f y
+
+instance (Foldable1 f, Foldable1 g) => Foldable1 (f :.: g) where
+    foldMap1 f = foldMap1 (foldMap1 f) . unComp1
+#endif
+
 -------------------------------------------------------------------------------
 -- Extra instances
 -------------------------------------------------------------------------------
-
 
 instance Foldable1 Identity where
     foldMap1                = coerce
@@ -495,17 +495,19 @@ instance Foldable1 Identity where
 
     toNonEmpty (Identity x) = x :| []
 
-    last1    = coerce
-    head1    = coerce
-    minimum1 = coerce
-    maximum1 = coerce
+    last    = coerce
+    head    = coerce
+    minimum = coerce
+    maximum = coerce
 
+-- | It would be enough for either half of a product to be 'Foldable1'.
+-- Other could be 'Foldable'.
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Product f g) where
     foldMap1 f (Functor.Pair x y)    = foldMap1 f x <> foldMap1 f y
     foldrMap1 g f (Functor.Pair x y) = foldr f (foldrMap1 g f y) x
 
-    head1 (Functor.Pair x _) = head1 x
-    last1 (Functor.Pair _ y) = last1 y
+    head (Functor.Pair x _) = head x
+    last (Functor.Pair _ y) = last y
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
     foldMap1 f (Functor.InL x) = foldMap1 f x
@@ -520,23 +522,23 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
     toNonEmpty (Functor.InL x) = toNonEmpty x
     toNonEmpty (Functor.InR y) = toNonEmpty y
 
-    head1 (Functor.InL x) = head1 x
-    head1 (Functor.InR y) = head1 y
-    last1 (Functor.InL x) = last1 x
-    last1 (Functor.InR y) = last1 y
+    head (Functor.InL x) = head x
+    head (Functor.InR y) = head y
+    last (Functor.InL x) = last x
+    last (Functor.InR y) = last y
 
-    minimum1 (Functor.InL x) = minimum1 x
-    minimum1 (Functor.InR y) = minimum1 y
-    maximum1 (Functor.InL x) = maximum1 x
-    maximum1 (Functor.InR y) = maximum1 y
+    minimum (Functor.InL x) = minimum x
+    minimum (Functor.InR y) = minimum y
+    maximum (Functor.InL x) = maximum x
+    maximum (Functor.InR y) = maximum y
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Compose f g) where
     foldMap1 f = foldMap1 (foldMap1 f) . getCompose
     -- This is incorrect definition!
     -- foldrMap1 f g = foldrMap1 (foldrMap1 f g) g . getCompose
 
-    head1 = head1 . head1 . getCompose
-    last1 = last1 . last1 . getCompose
+    head = head . head . getCompose
+    last = last . last . getCompose
 
 -------------------------------------------------------------------------------
 -- containers
@@ -550,20 +552,16 @@ instance Foldable1 Tree where
         go (Node x ys) =
             foldl' (\m zs -> let gozs = go zs in gozs `seq` m <> gozs) (f x) ys
 
-    -- This is incorrect definition!
-    -- foldrMap1 f _ (Node x [])     = f x
-    -- foldrMap1 f g (Node x (y:ys)) =
-    --     g (f x) (foldrMap1 (foldrMap1 f g) g (y :| ys))
 
     foldlMap1 f g (Node x xs) = goForest (f x) xs where
         goForest = foldl' go
         go y (Node z zs) = goForest (g y z) zs
 
-    foldl'Map1 f g (Node x xs) = goForest (f x) xs where
+    foldlMap1' f g (Node x xs) = goForest (f x) xs where
         goForest !y = foldl' go y
         go !y (Node z zs) = goForest (g y z) zs
 
-    head1 (Node x _) = x
+    head (Node x _) = x
 
 -------------------------------------------------------------------------------
 -- transformers
@@ -572,9 +570,8 @@ instance Foldable1 Tree where
 instance Foldable1 f => Foldable1 (Reverse f) where
     foldMap1 f = getDual . foldMap1 (Dual . f) . getReverse
 
-    -- TODO:
-    -- head1 = last1 . getReverse
-    -- last1 = head1 . getReverse
+    head = last . getReverse
+    last = head . getReverse
 
 deriving instance Foldable1 f => Foldable1 (IdentityT f)
 
@@ -591,20 +588,32 @@ instance Foldable1 f => Foldable1 (Lift f) where
 
 #ifdef MIN_VERSION_tagged
 instance Foldable1 (Tagged b) where
-    foldMap1                = coerce
+    foldMap1      = coerce
 
-    foldr1 _                = coerce
-    foldrMap1 g _           = coerce g
-    foldl1 _                = coerce
-    foldlMap1 g _           = coerce g
+    foldr1 _      = coerce
+    foldrMap1 g _ = coerce g
+    foldl1 _      = coerce
+    foldlMap1 g _ = coerce g
 
-    toNonEmpty (Tagged x) = x :| []
+    toNonEmpty x = coerce x :| []
 
-    last1    = coerce
-    head1    = coerce
-    minimum1 = coerce
-    maximum1 = coerce
+    last    = coerce
+    head    = coerce
+    minimum = coerce
+    maximum = coerce
 #endif
 
--- $setup
--- >>> import Prelude hiding (foldr1, foldl1)
+-------------------------------------------------------------------------------
+-- coerce shim
+-------------------------------------------------------------------------------
+
+#if __GLASGOW_HASKELL__ <708
+coerce :: a -> b
+coerce = unsafeCoerce
+
+(#.) :: (b -> c) -> (a -> b) -> a -> c
+(#.) _f = coerce
+#else
+(#.) :: Coercible b c => (b -> c) -> (a -> b) -> a -> c
+(#.) _f = coerce
+#endif
