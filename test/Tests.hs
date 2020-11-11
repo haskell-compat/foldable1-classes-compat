@@ -1,5 +1,10 @@
+{-# LANGUAGE DeriveFoldable      #-}
+{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main (main) where
+
+import Prelude hiding (foldl1, foldr1, head, last, maximum, minimum)
 
 import Data.Functor.Compose                 (Compose (..))
 import Data.Functor.Identity                (Identity (..))
@@ -9,13 +14,12 @@ import Data.List.NonEmpty                   (NonEmpty (..))
 import Data.Semigroup
        (First (..), Last (..), Max (..), Min (..), Semigroup (..))
 import Data.Tree                            (Tree (..))
-import Prelude                              hiding (foldl1, foldr1)
 import Test.Framework.Providers.API         (Test, TestName, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.Framework.Runners.Console       (defaultMain)
 import Test.QuickCheck
-       (Arbitrary, Fun, Property, Testable, applyFun, applyFun2,
-       counterexample, mapSize, (===))
+       (Arbitrary, Fun, Property, Testable, applyFun, applyFun2, counterexample,
+       mapSize, (===))
 import Test.QuickCheck.Poly                 (A, B, OrdA)
 
 import Test.QuickCheck.Instances ()
@@ -25,12 +29,14 @@ import Data.Foldable1
 
 main :: IO ()
 main = defaultMain
-    [ foldable1tests "NonEmpty" (P1 :: P1 NonEmpty)
-    , foldable1tests "Tree"     (P1 :: P1 Tree)
-    , foldable1tests "Identity" (P1 :: P1 Identity)
-    , foldable1tests "Compose"  (P1 :: P1 (Compose NonEmpty NonEmpty))
-    , foldable1tests "Product"  (P1 :: P1 (Product NonEmpty NonEmpty))
-    , foldable1tests "Sum"      (P1 :: P1 (Sum NonEmpty NonEmpty))
+    [ foldable1tests "NonEmpty"  (P1 :: P1 NonEmpty)
+    , foldable1tests "foldMap1"  (P1 :: P1 NE1)
+    , foldable1tests "foldrMap1" (P1 :: P1 NE3)
+    , foldable1tests "Tree"      (P1 :: P1 Tree)
+    , foldable1tests "Identity"  (P1 :: P1 Identity)
+    , foldable1tests "Compose"   (P1 :: P1 (Compose NonEmpty NonEmpty))
+    , foldable1tests "Product"   (P1 :: P1 (Product NonEmpty NonEmpty))
+    , foldable1tests "Sum"       (P1 :: P1 (Sum NonEmpty NonEmpty))
     ]
 
 -------------------------------------------------------------------------------
@@ -42,6 +48,7 @@ foldable1tests
       ( Foldable1 f
       , Arbitrary (f A), Show (f A)
       , Arbitrary (f OrdA), Show (f OrdA)
+      , Arbitrary (f B), Show (f B)
       , Arbitrary (f [B]), Show (f [B])
       )
     => TestName
@@ -62,10 +69,10 @@ foldable1tests name _p = testGroup name
     , testProperty "foldlMap1 default" $ smaller defaultFoldl1Map
     , testProperty "toNonEmpty default" defaultToNonEmpty
 
-    , testProperty "head1 default" defaultHead1
-    , testProperty "last1 default" defaultLast1
-    , testProperty "minimum1 default" defaultMinimum1
-    , testProperty "maximum1 default" defaultMaximum1
+    , testProperty "head default" defaultHead
+    , testProperty "last default" defaultLast
+    , testProperty "minimum default" defaultMinimum
+    , testProperty "maximum default" defaultMaximum
 
     -- if we first convert to nonEmpty it should be the same
     , testProperty "foldMap via toNonEmpty" viaFoldMap
@@ -73,10 +80,10 @@ foldable1tests name _p = testGroup name
     , testProperty "foldl1 via toNonEmpty" $ smaller viaFoldl1
     , testProperty "foldr1' via toNonEmpty" $ smaller viaFoldr1'
     , testProperty "foldl1' via toNonEmpty" $ smaller viaFoldl1'
-    , testProperty "head1 via toNonEmpty" viaHead1
-    , testProperty "last1 via toNonEmpty" viaLast1
-    , testProperty "minimum1 via toNonEmpty" viaMinimum1
-    , testProperty "maximum1 via toNonEmpty" viaMaximum1
+    , testProperty "head via toNonEmpty" viaHead
+    , testProperty "last via toNonEmpty" viaLast
+    , testProperty "minimum via toNonEmpty" viaMinimum
+    , testProperty "maximum via toNonEmpty" viaMaximum
     ]
   where
     -- Things like Compose NonEmpty NonEmpty are big
@@ -98,13 +105,14 @@ foldable1tests name _p = testGroup name
     strictFoldl1 xs g' = foldl1 g xs === foldl1' g xs where
         g = applyFun2 g'
 
-    strictFoldr1Map :: f A -> Fun A [B] -> Fun (A, [B]) [B] -> Property
-    strictFoldr1Map xs f' g' = foldrMap1 f g xs === foldr'Map1 f g xs where
+
+    strictFoldr1Map :: f A -> Fun A B -> Fun (A, B) B -> Property
+    strictFoldr1Map xs f' g' = foldrMap1 f g xs === foldrMap1' f g xs where
         f = applyFun f'
         g = applyFun2 g'
 
-    strictFoldl1Map :: f A -> Fun A [B] -> Fun ([B], A) [B] -> Property
-    strictFoldl1Map xs f' g' = foldlMap1 f g xs === foldl'Map1 f g xs where
+    strictFoldl1Map :: f A -> Fun A B -> Fun (B, A) B -> Property
+    strictFoldl1Map xs f' g' = foldlMap1 f g xs === foldlMap1' f g xs where
         f = applyFun f'
         g = applyFun2 g'
 
@@ -133,17 +141,17 @@ foldable1tests name _p = testGroup name
     defaultToNonEmpty :: f A -> Property
     defaultToNonEmpty xs = toNonEmpty xs === foldMap1 (:|[]) xs
 
-    defaultHead1 :: f A -> Property
-    defaultHead1 xs = head1 xs === getFirst (foldMap1 First xs)
+    defaultHead :: f A -> Property
+    defaultHead xs = head xs === getFirst (foldMap1 First xs)
 
-    defaultLast1 :: f A -> Property
-    defaultLast1 xs = last1 xs === getLast (foldMap1 Last xs)
+    defaultLast :: f A -> Property
+    defaultLast xs = last xs === getLast (foldMap1 Last xs)
 
-    defaultMinimum1 :: f OrdA -> Property
-    defaultMinimum1 xs = minimum1 xs === getMin (foldMap1 Min xs)
+    defaultMinimum :: f OrdA -> Property
+    defaultMinimum xs = minimum xs === getMin (foldMap1 Min xs)
 
-    defaultMaximum1 :: f OrdA -> Property
-    defaultMaximum1 xs = maximum1 xs === getMax (foldMap1 Max xs)
+    defaultMaximum :: f OrdA -> Property
+    defaultMaximum xs = maximum xs === getMax (foldMap1 Max xs)
 
     viaFoldMap :: f A -> Fun A [B] -> Property
     viaFoldMap xs f' = foldMap f xs === foldMap f (toNonEmpty xs) where
@@ -165,17 +173,35 @@ foldable1tests name _p = testGroup name
     viaFoldl1' xs g' = foldl1' g xs === foldl1' g (toNonEmpty xs) where
         g = applyFun2 g'
 
-    viaHead1 :: f A -> Property
-    viaHead1 xs = head1 xs === head1 (toNonEmpty xs)
+    viaHead :: f A -> Property
+    viaHead xs = head xs === head (toNonEmpty xs)
 
-    viaLast1 :: f A -> Property
-    viaLast1 xs = last1 xs === last1 (toNonEmpty xs)
+    viaLast :: f A -> Property
+    viaLast xs = last xs === last (toNonEmpty xs)
 
-    viaMinimum1 :: f OrdA -> Property
-    viaMinimum1 xs = minimum1 xs === minimum1 (toNonEmpty xs)
+    viaMinimum :: f OrdA -> Property
+    viaMinimum xs = minimum xs === minimum (toNonEmpty xs)
 
-    viaMaximum1 :: f OrdA -> Property
-    viaMaximum1 xs = maximum1 xs === maximum1 (toNonEmpty xs)
+    viaMaximum :: f OrdA -> Property
+    viaMaximum xs = maximum xs === maximum (toNonEmpty xs)
+
+-------------------------------------------------------------------------------
+-- NonEmpty variants
+-------------------------------------------------------------------------------
+
+-- Using foldMap1 to define Foldable1
+newtype NE1 a = NE1 (NonEmpty a)
+  deriving (Eq, Show, Functor, Data.Foldable.Foldable, Arbitrary)
+
+instance Foldable1 NE1 where
+    foldMap1 f (NE1 xs) = foldMap1 f xs
+
+-- Using foldrMap1 to define Foldable1
+newtype NE3 a = NE3 (NonEmpty a)
+  deriving (Eq, Show, Functor, Foldable, Arbitrary)
+
+instance Foldable1 NE3 where
+    foldrMap1 g f (NE3 xs) = foldrMap1 g f xs
 
 -------------------------------------------------------------------------------
 -- utilities
@@ -185,3 +211,6 @@ foldable1tests name _p = testGroup name
 data P1 f
     = P1
     | Unused (f Int)
+
+_unused :: P1 []
+_unused = Unused []

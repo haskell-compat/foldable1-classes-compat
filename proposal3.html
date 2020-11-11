@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Foldable1 proposal</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="add-foldable1-and-bifoldable1-to-base">Add Foldable1 and Bifoldable1 to base</h1>
+<h2 id="motivation">Motivation</h2>
+<p>It’s regularly asked whether <code>Foldable1</code> could be added to <code>base</code> (e.g. on reddit<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, there’re also GHC issue<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> and old phabricator diff<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>) Also there’s work towards non-empty maps and sets<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, which would benefit from <code>Foldable1</code>. Recently <code>nonempty-vector</code> was uploaded to Hackage as well<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>.</p>
+<p>As commented on reddit, <code>Foldable1</code> could be added without any pain to the <code>base</code> as it’s pure addition - no modifications needed in existing modules.</p>
+<p>The most difficult question is the names: <code>Foldable1</code>, <code>Semifoldable</code>, <code>NonEmptyFoldable</code>, or something else?</p>
+<h2 id="changelog">Changelog</h2>
+<h3>
+Revision 3
+</h3>
+<ul>
+<li>Propose moving <code>Bifoldable1</code> (<code>Semibifoldable</code>) to <code>base</code> as well. Move compat <code>Bifoldable1</code> to <code>bifunctors</code>.</li>
+<li>Changed the type of <code>foldrMap1</code> to be <code>(a -&gt; b) -&gt; (a -&gt; b -&gt; b) -&gt; t a -&gt; b</code></li>
+<li>Add <code>foldrMapM1</code> and <code>foldlMapM1</code>. These methods could use just <code>Bind</code> (<code>Semimonad</code>), but as that’s not available in base, they don’t. <code>semigroupoids</code> could provide such variants.</li>
+<li>Third naming variant: <code>NonEmptyFoldable</code> with <code>foldMapNE</code>; and few other variations mentioned.</li>
+<li>Patches: <a href="https://github.com/ekmett/bifunctors/pull/78" class="uri">https://github.com/ekmett/bifunctors/pull/78</a> <a href="https://github.com/ekmett/semigroupoids/pull/87" class="uri">https://github.com/ekmett/semigroupoids/pull/87</a></li>
+</ul>
+<h3>
+Revision 2
+</h3>
+<ul>
+<li>Remove <code>toNonEmpty</code> from MINIMAL pragma</li>
+<li>Add <code>Semifoldable</code> naming-scheme alternative (see sections at the end)</li>
+<li>Discuss <code>Bifoldable1</code></li>
+<li>Discuss <code>foldr1</code> inefficiency</li>
+<li>Migration plan for <code>tagged</code> and <code>bifunctors</code></li>
+<li>PoC patch to <code>semigroupoids</code></li>
+<li><code>foldable1</code> package has doctest examples, and a test-suite</li>
+<li>more members are manually implemented (and tested)</li>
+</ul>
+<h2 id="change-foldable1">Change: Foldable1</h2>
+<p>The change exist as merge request<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a> on gitlab.haskell.org. However the more up to date version of a proposed module is visible from haddocks on</p>
+<blockquote>
+<p><a href="https://oleg.fi/haddocks/foldable1/Data-Foldable1.html" class="uri">https://oleg.fi/haddocks/foldable1/Data-Foldable1.html</a></p>
+</blockquote>
+<p>or</p>
+<blockquote>
+<p><a href="http://oleg.fi/haddocks/semifoldable/Data-Semifoldable.html" class="uri">http://oleg.fi/haddocks/semifoldable/Data-Semifoldable.html</a></p>
+</blockquote>
+<p>Importantly, this change <strong>doesn’t change</strong> anything in other modules of <code>base</code>, except of adding a <code>Foldable</code> instance to <code>Data.Complex</code>. In particular, <code>foldl1</code> and <code>foldr1</code> in <code>Data.Foldable</code> remain partial, etc.</p>
+<p>My version of <code>Foldable1</code> class is big, so I’ll comment the motivation for each member</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> t <span class="ot">=&gt;</span> <span class="dt">Foldable1</span> t <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    <span class="ot">{-# MINIMAL foldMap1 | foldr1map #-}</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="ot">    fold1 ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    <span class="co">-- the defining member, like foldMap but only asking for Semigroup</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="ot">    foldMap1 ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>    <span class="co">-- strict foldMap1, cf foldMap&#39;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a><span class="ot">    foldMap1&#39; ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>    <span class="co">-- analogue of toList</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a><span class="ot">    toNonEmpty ::</span> t a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> a</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>    <span class="co">-- left&amp;right, strict&amp;non-strict folds</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a><span class="ot">    foldr1  ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a><span class="ot">    foldr1&#39; ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a><span class="ot">    foldl1  ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a><span class="ot">    foldl1&#39; ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>    <span class="co">-- these can have efficient implementation for NonEmptySet</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a><span class="ot">    maximum1 ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a><span class="ot">    minimum1 ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>    <span class="co">-- head1 have efficient implementation for NonEmpty and Tree</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>    <span class="co">-- last1 for symmetry</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a><span class="ot">    head1 ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a><span class="ot">    last1 ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a>    <span class="co">-- fold variants with premap.</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>    <span class="co">-- Without this map, we cannot implement foldl using foldr etc.</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a><span class="ot">    foldrMap1  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a><span class="ot">    foldlMap1&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a><span class="ot">    foldlMap1  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true"></a><span class="ot">    foldrMap1&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span></code></pre></div>
+<p>The merge request also adds instances for everything non-empty in <code>base</code>.</p>
+<p>I propose the <code>Data.Foldable1</code> as the module name (an alternative <code>Data.Semifoldable</code>). <code>semigroupoids</code><a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> uses <code>Data.Semigroup.Foldable</code>, but it’s confusing; and using different name could help migration.</p>
+<p>Additionally, the <code>Data.Foldable1</code> module contains seven top-level functions, which should be self-explanatory:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">intercalate1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Semigroup</span> m) <span class="ot">=&gt;</span> m <span class="ot">-&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="ot">foldrM1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="ot">foldlM1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="ot">foldrMapM1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="ot">foldlMapM1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="ot">maximum1By ::</span> <span class="dt">Foldable1</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="ot">minimum1By ::</span> <span class="dt">Foldable1</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span></code></pre></div>
+<p>This is less than in <code>Data.Semigroup.Foldable</code><a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a>, as other top-level definitions doesn’t make sense without bringing in the <code>Apply</code> type-class. For example:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co">-- needs Apply, not in Data.Foldable1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="ot">traverse1_ ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Apply</span> f) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> f ()</span></code></pre></div>
+<p>And if we relax <code>Apply</code> to <code>Applicative</code>, we get <code>traverse_</code>. Bringing <code>Apply</code> into <code>base</code> is out-of-scope of this proposal.</p>
+<h2 id="bifoldable1">Bifoldable1</h2>
+<p><code>Bifoldable</code> class have <code>Bifoldable1</code> subclass in <code>semigroupoids</code>. We propose moving that class to <code>base</code> as well.</p>
+<p>The propose module would be very tiny and simple.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifoldable</span> t <span class="ot">=&gt;</span> <span class="dt">Bifoldable1</span> t <span class="kw">where</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="ot">  bifold1 ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m m <span class="ot">-&gt;</span> m</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>  bifold1 <span class="ot">=</span> bifoldMap1 <span class="fu">id</span> <span class="fu">id</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>  <span class="ot">{-# INLINE bifold1 #-}</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="ot">  bifoldMap1 ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a b <span class="ot">-&gt;</span> m</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>  bifoldMap1 f g <span class="ot">=</span> <span class="fu">maybe</span> (<span class="fu">error</span> <span class="st">&quot;bifoldMap1&quot;</span>) <span class="fu">id</span> <span class="op">.</span> getOption <span class="op">.</span> bifoldMap (<span class="dt">Option</span> <span class="op">.</span> <span class="dt">Just</span> <span class="op">.</span> f) (<span class="dt">Option</span> <span class="op">.</span> <span class="dt">Just</span> <span class="op">.</span> g)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>  <span class="ot">{-# INLINE bifoldMap1 #-}</span></span></code></pre></div>
+<p>or using <code>Semi</code> prefix:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifoldable</span> t <span class="ot">=&gt;</span> <span class="dt">Semibifoldable</span> t <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="ot">  semibifold ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m m <span class="ot">-&gt;</span> m</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>  semibifold <span class="ot">=</span> semibifoldMap <span class="fu">id</span> <span class="fu">id</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  <span class="ot">{-# INLINE semibifold #-}</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a><span class="ot">  semibifoldMap ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a b <span class="ot">-&gt;</span> m</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>  semibifoldMap f g <span class="ot">=</span> <span class="fu">maybe</span> (<span class="fu">error</span> <span class="st">&quot;semibifoldMap&quot;</span>) <span class="fu">id</span> <span class="op">.</span> getOption <span class="op">.</span> bifoldMap (<span class="dt">Option</span> <span class="op">.</span> <span class="dt">Just</span> <span class="op">.</span> f) (<span class="dt">Option</span> <span class="op">.</span> <span class="dt">Just</span> <span class="op">.</span> g)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>  <span class="ot">{-# INLINE semibifoldMap #-}</span></span></code></pre></div>
+<p>There is a pull-request to <code>bifunctors</code><a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a>, as a proof-of-concept, using <code>Semibifoldable</code> naming scheme.</p>
+<p><code>Bisemifoldable</code> is also a variant, yet <code>Semibifoldable</code> sounds more correct: take <code>Bifoldable</code> and remove empty things resulting into <code>Semibifoldable</code>.</p>
+<h2 id="name-controversy">Name controversy</h2>
+<p>Adding <code>Foldable1</code> is considered controversial. Library submissions guidelines say:</p>
+<blockquote>
+<p>Adding a new, useful function under a clear name is probably not controversial</p>
+</blockquote>
+<p>Yet in this case, there doesn’t seem to be clear names. The alternative naming scheme is discussed on <code>semigroupoids</code> issue tracker<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a>.</p>
+<p>In a comment nickname chessai list a table of possible renamings, essentially dropping <code>1</code>-suffix and adding <code>semi</code>- prefix.<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> Following comments brainstorm more ideas like:</p>
+<ul>
+<li>all the functions that aren’t actual typeclass methods could possibly just keep the <code>1</code> suffix</li>
+<li>I’m struggling against consistency here, because some functions sound great with <code>semi</code>- as their prefix, and some sound bad</li>
+</ul>
+<p>The bad sounding names are <code>semihead</code>, <code>semilast</code>, <code>semimaximum</code> and <code>semiminimum</code>. In theory they could be prefixless and suffixless, i.e. plain <code>head</code>, <code>last</code>, <code>maximum</code>, and <code>minimum</code>. However, I consider that naming more controversial, as it clashes with <code>Prelude</code> names, even one can argue that <code>Semifoldable</code> members should eventually replace them. Luckily, the names can be changed, if they are on the way into <code>Prelude</code>.</p>
+<p>A variation of this, is to use bare <code>s</code> as prefix to the members, i.e. <code>sfoldMap</code>, <code>sfoldr</code>. It’s shorter, but maybe too subtle?</p>
+<p>One justification to not use 1-suffix name is<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a></p>
+<blockquote>
+<p>The 1 is still in conflict, but requires more Eq1, etc like classes to define. e.g. Monoid1 for taking a monoid to a monoid, then Foldable1 consistently in that nomenclature would let you reduce through a Monoid1.</p>
+</blockquote>
+<p>Also using qualified imports would prevent <code>Foldable1</code> class to be ever imported unqualified<a href="#fn13" class="footnote-ref" id="fnref13" role="doc-noteref"><sup>13</sup></a>:</p>
+<blockquote>
+<p>The haddocks for Semi.Monad being a superclass of Monad someday in the far flung future would be frankly pretty awful to read, and would ensure that they could never move into Prelude, forever dooming them to a second class existence.</p>
+</blockquote>
+<p>And finally, trying to unify <code>Foldable</code> with <code>Foldable1</code> into single class using type families / some hackery requires <code>QuantifiedConstraints</code> at the very least. That’s not a realistic option to current, essentially a Haskell98 formulation.</p>
+<p>On the other hand few people noted<a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a> that where <code>Semiapplicative</code> and <code>Semimonad</code> would be good names for what’s currently called <code>Apply</code> and <code>Bind</code>, <code>Semifoldable</code> feels like a superclass of <code>Foldable</code>, i.e.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co">-- feels like</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Semifoldable</span> f <span class="ot">=&gt;</span> <span class="dt">Foldable</span> f <span class="kw">where</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> f <span class="ot">=&gt;</span> <span class="dt">Semifoldable</span> f <span class="kw">where</span></span></code></pre></div>
+<p>Alternatives mentioned are</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="co">-- class prefix NonEmpty,</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="co">-- method prefix bare s</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> f <span class="ot">=&gt;</span> <span class="dt">NonEmptyFoldable</span> f <span class="kw">where</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="ot">    sfoldMap ::</span> <span class="dt">Semigroup</span> s <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> s</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a><span class="ot">    sminimum ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> f a <span class="ot">-&gt;</span> a</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a><span class="ot">    shead    ::</span> f a <span class="ot">-&gt;</span> a</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifoldable</span> p <span class="ot">=&gt;</span> <span class="dt">NonEmptyBifoldable</span> p <span class="kw">where</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a><span class="ot">    sbifoldMap ::</span> <span class="dt">Semigroup</span> s <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> s</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a><span class="co">-- or alternatively: method prefix `ne` (for nonempty):</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a>    nefoldMap</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a>    neminimum</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>    nehead</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>    nebifoldMap</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a><span class="co">-- or suffix `NE`</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true"></a>    foldMapNE</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true"></a>    minimumNE</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true"></a>    headNE</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true"></a>    bifoldMapNE</span></code></pre></div>
+<p>The last function naming scheme is used in <code>containers</code> patch<a href="#fn15" class="footnote-ref" id="fnref15" role="doc-noteref"><sup>15</sup></a>, which adds <code>NonEmptyMap</code>. Using this scheme <code>Traversable1</code> will become</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Traversable</span> t <span class="ot">=&gt;</span> <span class="dt">NonEmptyTraversable</span> t <span class="kw">where</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a><span class="ot">    traverseNE ::</span> <span class="dt">SemiApplicative</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> f (t b)</span></code></pre></div>
+<h2 id="inefficiency-of-foldr1">Inefficiency of foldr1</h2>
+<p>In another <code>semigroupoids</code> issue<a href="#fn16" class="footnote-ref" id="fnref16" role="doc-noteref"><sup>16</sup></a>, the inefficiency of <code>foldr1</code> is highlighted.</p>
+<p>The proposal includes functions like:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="ot">foldrMap1 ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="ot">foldlMap1 ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span></code></pre></div>
+<p>And in fact the minimal pragma is <code>{-# MINIMAL foldMap1 | foldrMap1 #-}</code></p>
+<p>The order of function arguments is chosen so:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="fu">foldr1</span> <span class="ot">=</span> foldr1Map <span class="fu">id</span></span></code></pre></div>
+<p>Another option is to have function arguments flipped:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="ot">foldrMap1 ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a><span class="ot">foldlMap1 ::</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span></code></pre></div>
+<p>which more closely resembles <code>foldr</code> and <code>foldl</code>. The start element of a fold is <code>seed</code> with the right or the left element.</p>
+<h2 id="compatibility-migration">Compatibility &amp; migration</h2>
+<p>I drafted a compatibility package <code>foldable1</code>:</p>
+<ul>
+<li>GitHub repository: <a href="https://github.com/phadej/foldable1" class="uri">https://github.com/phadej/foldable1</a></li>
+<li>haddocks: <a href="https://oleg.fi/haddocks/foldable1/" class="uri">https://oleg.fi/haddocks/foldable1/</a></li>
+<li>Semifoldable variant: <a href="https://github.com/phadej/foldable1/pull/5" class="uri">https://github.com/phadej/foldable1/pull/5</a></li>
+<li>its haddocks: <a href="https://oleg.fi/haddocks/semifoldable/" class="uri">https://oleg.fi/haddocks/semifoldable/</a></li>
+</ul>
+<p>which I hope could be maintained under github.com/haskell organization. I can act as a maintainer, with a hope that there won’t be a lot of changes happening in <code>Data.Foldable1</code>.</p>
+<p>To my surprise, there’s already a package with this name on Hackage<a href="#fn17" class="footnote-ref" id="fnref17" role="doc-noteref"><sup>17</sup></a> by M Farkas-Dyck (cc’d). He kindly offered to donate the name if this proposal is accepted (with foldable1 name).<a href="#fn18" class="footnote-ref" id="fnref18" role="doc-noteref"><sup>18</sup></a></p>
+<p><code>Data.Foldable1</code> contains also instances for <code>Lift</code>, <code>Backwards</code> and <code>Reverse</code>, and other data types from <code>transformers</code>. Perfectly, the <code>transformers</code> bundled with GHC with this change would implement the instances as well. This change should propagate to <code>transformers-compat</code> too.</p>
+<p>Similarly, <code>containers</code> would have an instance for <code>Tree</code> (and non-empty <code>Set</code> and <code>Map</code> when they are added).</p>
+<p>Other packages would be compat’d as follows: - <code>foldable1</code> would provide instances for <code>Tagged</code> from <code>tagged</code> - <code>Bifoldable1</code> class would migrate to <code>bifunctors</code></p>
+<p>This is because current dependencies are:</p>
+<pre><code>semigroups &lt;- tagged &lt;- bifunctors &lt;- semigroupoids</code></pre>
+<p>and <code>foldable1</code> would be more natural between <code>tagged</code> and <code>bifunctors</code>:</p>
+<pre><code>semigroups &lt;- tagged &lt;- foldable1 &lt;- bifunctors &lt;- semigroupoids</code></pre>
+<p><code>foldable</code> have to be before <code>bifunctors</code> in the dependency tree, as <code>Bifoldable1</code> instances of some bifunctors need <code>Foldable1</code> class.</p>
+<p>I also drafted a pull requests for compatibility patches to <code>bifunctors</code><a href="#fn19" class="footnote-ref" id="fnref19" role="doc-noteref"><sup>19</sup></a> and <code>semigroupoids</code><a href="#fn20" class="footnote-ref" id="fnref20" role="doc-noteref"><sup>20</sup></a> with</p>
+<h2 id="unresolved-questions">Unresolved questions</h2>
+<ul>
+<li>The names? Foldable1 or Semifoldable, members?
+<ul>
+<li>Bifoldable1 or Semibifoldable (or Bisemifoldable)?</li>
+<li>Members: <code>semifoldMap</code> or just <code>sfoldMap</code>? See following Foldable1 and Semifoldable sections for synopsis</li>
+</ul></li>
+<li>GHC-8.10 freeze is quite soon, is targeting GHC-8.12/base-4.15 more realistic. Note: this technically is a non-breaking change in <code>base</code>, so could be bundled with GHC-8.10.2, but I think sticking to major would be preferable by GHC HQ.</li>
+</ul>
+<h2 id="appendix-foldable1-synopsis">Appendix: Foldable1 synopsis</h2>
+<p>Module names: <code>Data.Foldable1</code> and <code>Data.Bifoldable1</code></p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> t <span class="ot">=&gt;</span> <span class="dt">Foldable1</span> t <span class="kw">where</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a><span class="ot">  fold1      ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a><span class="ot">  foldMap1   ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a><span class="ot">  foldMap1&#39;  ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a><span class="ot">  foldr1     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true"></a><span class="ot">  foldr1&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true"></a><span class="ot">  foldl1     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true"></a><span class="ot">  foldl1&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true"></a><span class="ot">  toNonEmpty ::</span> t a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> a</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true"></a><span class="ot">  maximum1   ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true"></a><span class="ot">  minimum1   ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true"></a><span class="ot">  head1      ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true"></a><span class="ot">  last1      ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true"></a><span class="ot">  foldrMap1  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true"></a><span class="ot">  foldlMap1&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true"></a><span class="ot">  foldlMap1  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true"></a><span class="ot">  foldrMap1&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true"></a></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true"></a><span class="ot">intercalate1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Semigroup</span> m) <span class="ot">=&gt;</span> m <span class="ot">-&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true"></a><span class="ot">foldrM1      ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true"></a><span class="ot">foldlM1      ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true"></a><span class="ot">foldrMapM1   ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true"></a><span class="ot">foldlMapM1   ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true"></a><span class="ot">maximum1By   ::</span> <span class="dt">Foldable1</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true"></a><span class="ot">minimum1By   ::</span> <span class="dt">Foldable1</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true"></a></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifunctor</span> p <span class="ot">=&gt;</span> <span class="dt">Bifunctor1</span> p <span class="kw">where</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true"></a><span class="ot">  bifoldMap1 ::</span> <span class="dt">Semigroup</span> s <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> s</span></code></pre></div>
+<h2 id="appendix-foldable1-synopsis-with-clashing-names">Appendix: Foldable1 synopsis with clashing names</h2>
+<p>Module names: <code>Data.Foldable1</code> and <code>Data.Bifoldable1</code></p>
+<p><a href="https://oleg.fi/haddocks/foldable1/Data-Foldable1.html" class="uri">https://oleg.fi/haddocks/foldable1/Data-Foldable1.html</a></p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> t <span class="ot">=&gt;</span> <span class="dt">Foldable1</span> t <span class="kw">where</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a><span class="ot">  fold1      ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true"></a><span class="ot">  foldMap1   ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true"></a><span class="ot">  foldMap1&#39;  ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true"></a><span class="ot">  foldr1     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true"></a><span class="ot">  foldr1&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true"></a><span class="ot">  foldl1     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true"></a><span class="ot">  foldl1&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true"></a><span class="ot">  toNonEmpty ::</span> t a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> a</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true"></a><span class="ot">  maximum    ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true"></a><span class="ot">  minimum    ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true"></a><span class="ot">  head       ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true"></a><span class="ot">  last       ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true"></a></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true"></a><span class="ot">  foldrMap1  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true"></a><span class="ot">  foldlMap1&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true"></a><span class="ot">  foldlMap1  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true"></a><span class="ot">  foldrMap1&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true"></a></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true"></a><span class="ot">intercalate1 ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Semigroup</span> m) <span class="ot">=&gt;</span> m <span class="ot">-&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true"></a><span class="ot">foldrM1      ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true"></a><span class="ot">foldlM1      ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true"></a><span class="ot">foldrMapM1   ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true"></a><span class="ot">foldlMapM1   ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true"></a><span class="ot">maximumBy    ::</span> <span class="dt">Foldable1</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true"></a><span class="ot">minimumBy    ::</span> <span class="dt">Foldable1</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true"></a></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifunctor</span> p <span class="ot">=&gt;</span> <span class="dt">Bifunctor1</span> p <span class="kw">where</span></span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true"></a><span class="ot">  bifoldMap1 ::</span> <span class="dt">Semigroup</span> s <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> s</span></code></pre></div>
+<h2 id="appendix-semifoldable-synopsis">Appendix: Semifoldable synopsis</h2>
+<p>Module names: <code>Data.Semifoldable</code> and <code>Data.Semibifoldable</code></p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> t <span class="ot">=&gt;</span> <span class="dt">Semifoldable</span> t <span class="kw">where</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a><span class="ot">  semifold      ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true"></a><span class="ot">  semifoldMap   ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true"></a><span class="ot">  semifoldMap&#39;  ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true"></a><span class="ot">  semifoldr     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true"></a><span class="ot">  semifoldr&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true"></a><span class="ot">  semifoldl     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true"></a><span class="ot">  semifoldl&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true"></a><span class="ot">  toNonEmpty    ::</span> t a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> a</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true"></a></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true"></a><span class="ot">  semimaximum   ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true"></a><span class="ot">  semiminimum   ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true"></a><span class="ot">  semihead      ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true"></a><span class="ot">  semilast      ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true"></a><span class="ot">  semifoldrMap  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true"></a><span class="ot">  semifoldlMap&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true"></a><span class="ot">  semifoldlMap  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true"></a><span class="ot">  semifoldrMap&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true"></a></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true"></a><span class="ot">intercalate1  ::</span> (<span class="dt">Semifoldable</span> t, <span class="dt">Semigroup</span> m) <span class="ot">=&gt;</span> m <span class="ot">-&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true"></a><span class="ot">semifoldrM    ::</span> (<span class="dt">Semifoldable</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true"></a><span class="ot">semifoldlM    ::</span> (<span class="dt">Semifoldable</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true"></a><span class="ot">semifoldrMapM ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true"></a><span class="ot">semifoldlMapM ::</span> (<span class="dt">Foldable1</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true"></a><span class="ot">semimaximumBy ::</span> <span class="dt">Semifoldable</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true"></a><span class="ot">semiminimumBy ::</span> <span class="dt">Semifoldable</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true"></a></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true"></a><span class="co">-- or alternatively</span></span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true"></a>semiintercalate</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true"></a></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifunctor</span> p <span class="ot">=&gt;</span> <span class="dt">NonEmptyBifunctor</span> p <span class="kw">where</span></span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true"></a><span class="ot">  semifoldMap ::</span> <span class="dt">Semigroup</span> s <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> s</span></code></pre></div>
+<h2 id="appendix-nonemptyfoldable-synopsis">Appendix: NonEmptyFoldable synopsis</h2>
+<p>Module names: <code>Data.Foldable.NonEmpty</code> and <code>Data.Bifoldable.NonEmpty</code></p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Foldable</span> t <span class="ot">=&gt;</span> <span class="dt">NonEmptyFoldable</span> t <span class="kw">where</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true"></a><span class="ot">  foldNE      ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true"></a><span class="ot">  foldMapNE   ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true"></a><span class="ot">  foldMapNE&#39;  ::</span> <span class="dt">Semigroup</span> m <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true"></a><span class="ot">  foldrNE     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true"></a><span class="ot">  foldrNE&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true"></a><span class="ot">  foldlNE     ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true"></a><span class="ot">  foldlNE&#39;    ::</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true"></a><span class="ot">  toNonEmpty  ::</span> t a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> a</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true"></a><span class="ot">  maximumNE   ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true"></a><span class="ot">  minimumNE   ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true"></a><span class="ot">  headNE      ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true"></a><span class="ot">  lastNE      ::</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true"></a><span class="ot">  foldrMapNE  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true"></a><span class="ot">  foldlMapNE&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true"></a><span class="ot">  foldlMapNE  ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true"></a><span class="ot">  foldrMapNE&#39; ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> b</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true"></a></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true"></a><span class="ot">intercalateNE ::</span> (<span class="dt">NonEmptyFoldable</span> t, <span class="dt">Semigroup</span> m) <span class="ot">=&gt;</span> m <span class="ot">-&gt;</span> t m <span class="ot">-&gt;</span> m</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true"></a><span class="ot">foldrMNE      ::</span> (<span class="dt">NonEmptyFoldable</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true"></a><span class="ot">foldlMNE      ::</span> (<span class="dt">NonEmptyFoldable</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m a) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m a</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true"></a><span class="ot">foldrMapMNE   ::</span> (<span class="dt">NonEmptyFoldable</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true"></a><span class="ot">foldlMapMNE   ::</span> (<span class="dt">NonEmptyFoldable</span> t, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> m b</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true"></a><span class="ot">maximumNEBy   ::</span> <span class="dt">NonEmptyFoldable</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true"></a><span class="ot">minimumNEBy   ::</span> <span class="dt">NonEmptyFoldable</span> t <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span>) <span class="ot">-&gt;</span> t a <span class="ot">-&gt;</span> a</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true"></a></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true"></a><span class="kw">class</span> <span class="dt">Bifunctor</span> p <span class="ot">=&gt;</span> <span class="dt">NonEmptyBifunctor</span> p <span class="kw">where</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true"></a><span class="ot">  bifoldMapNE ::</span> <span class="dt">Semigroup</span> s <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> s) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> s</span></code></pre></div>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p><a href="https://www.reddit.com/r/haskell/comments/6d0vgt/could_we_have_foldable1_and_traversable1_in_base/" class="uri">https://www.reddit.com/r/haskell/comments/6d0vgt/could_we_have_foldable1_and_traversable1_in_base/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p><a href="https://gitlab.haskell.org/ghc/ghc/issues/13573" class="uri">https://gitlab.haskell.org/ghc/ghc/issues/13573</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p><a href="https://phabricator.haskell.org/D4812" class="uri">https://phabricator.haskell.org/D4812</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p><a href="https://github.com/haskell/containers/pull/616" class="uri">https://github.com/haskell/containers/pull/616</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" role="doc-endnote"><p><a href="https://hackage.haskell.org/package/nonempty-vector" class="uri">https://hackage.haskell.org/package/nonempty-vector</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" role="doc-endnote"><p><a href="https://gitlab.haskell.org/ghc/ghc/merge_requests/1973" class="uri">https://gitlab.haskell.org/ghc/ghc/merge_requests/1973</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" role="doc-endnote"><p><a href="https://hackage.haskell.org/package/semigroupoids" class="uri">https://hackage.haskell.org/package/semigroupoids</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8" role="doc-endnote"><p><a href="https://hackage.haskell.org/package/semigroupoids-5.3.3/docs/Data-Semigroup-Foldable-Class.html" class="uri">https://hackage.haskell.org/package/semigroupoids-5.3.3/docs/Data-Semigroup-Foldable-Class.html</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9" role="doc-endnote"><p><a href="https://github.com/ekmett/bifunctors/pull/78" class="uri">https://github.com/ekmett/bifunctors/pull/78</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10" role="doc-endnote"><p><a href="https://github.com/ekmett/semigroupoids/issues/26" class="uri">https://github.com/ekmett/semigroupoids/issues/26</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11" role="doc-endnote"><p><a href="https://github.com/ekmett/semigroupoids/issues/26#issuecomment-395565772" class="uri">https://github.com/ekmett/semigroupoids/issues/26#issuecomment-395565772</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn12" role="doc-endnote"><p><a href="https://github.com/ekmett/semigroupoids/issues/26#issuecomment-395950042" class="uri">https://github.com/ekmett/semigroupoids/issues/26#issuecomment-395950042</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn13" role="doc-endnote"><p><a href="https://github.com/ekmett/semigroupoids/issues/26#issuecomment-398117218" class="uri">https://github.com/ekmett/semigroupoids/issues/26#issuecomment-398117218</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn14" role="doc-endnote"><p><a href="https://mail.haskell.org/pipermail/libraries/2019-October/030036.html" class="uri">https://mail.haskell.org/pipermail/libraries/2019-October/030036.html</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn15" role="doc-endnote"><p><a href="https://github.com/haskell/containers/pull/616" class="uri">https://github.com/haskell/containers/pull/616</a><a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn16" role="doc-endnote"><p><a href="https://github.com/ekmett/semigroupoids/issues/77" class="uri">https://github.com/ekmett/semigroupoids/issues/77</a><a href="#fnref16" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn17" role="doc-endnote"><p><a href="https://hackage.haskell.org/package/foldable1" class="uri">https://hackage.haskell.org/package/foldable1</a><a href="#fnref17" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn18" role="doc-endnote"><p><a href="https://mail.haskell.org/pipermail/libraries/2019-October/030029.html" class="uri">https://mail.haskell.org/pipermail/libraries/2019-October/030029.html</a><a href="#fnref18" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn19" role="doc-endnote"><p><a href="https://github.com/ekmett/bifunctors/pull/78" class="uri">https://github.com/ekmett/bifunctors/pull/78</a><a href="#fnref19" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn20" role="doc-endnote"><p><a href="https://github.com/ekmett/semigroupoids/pull/87" class="uri">https://github.com/ekmett/semigroupoids/pull/87</a><a href="#fnref20" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>
