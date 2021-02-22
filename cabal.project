@@ -1,3 +1,5 @@
 packages: .
 tests: True
 benchmarks: True
+
+allow-newer: cassava-0.5.2.0:base
