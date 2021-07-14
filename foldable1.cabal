@@ -52,6 +52,7 @@ library
   hs-source-dirs:   src
   ghc-options:      -Wall
   exposed-modules:  Data.Foldable1
+  exposed-modules:  Data.Bifoldable1
   build-depends:
       base          >=4.3 && <4.16
     , containers    >=0.4 && <0.7
@@ -59,6 +60,9 @@ library
 
   if !impl(ghc >=8.6)
     build-depends: base-orphans >=0.8.1 && <0.9
+
+  if !impl(ghc >=8.2)
+    build-depends: bifunctors >=5.5.11 && <5.6
 
   if !impl(ghc >=8.0)
     build-depends:
