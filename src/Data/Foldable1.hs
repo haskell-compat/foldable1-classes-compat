@@ -212,7 +212,7 @@ class Foldable t => Foldable1 t where
     -- 128
     --
     maximum :: Ord a => t a -> a
-    maximum = getMax . foldMap1 Max
+    maximum = getMax #. foldMap1' Max
 
     -- | The least element of a non-empty structure.
     --
@@ -220,7 +220,7 @@ class Foldable t => Foldable1 t where
     -- 8
     --
     minimum :: Ord a => t a -> a
-    minimum = getMin . foldMap1 Min
+    minimum = getMin #. foldMap1' Min
 
     -- | The first element of a non-empty structure.
     --
@@ -228,7 +228,7 @@ class Foldable t => Foldable1 t where
     -- 1
     --
     head :: t a -> a
-    head = getFirst . foldMap1 First
+    head = getFirst #. foldMap1 First
 
     -- | The last element of a non-empty structure.
     --
@@ -236,7 +236,7 @@ class Foldable t => Foldable1 t where
     -- 4
     --
     last :: t a -> a
-    last = getLast . foldMap1 Last
+    last = getLast #. foldMap1 Last
 
     foldrMap1 :: (a -> b) -> (a -> b -> b) -> t a -> b
     foldrMap1 f g xs =
