@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveFoldable      #-}
-{-# LANGUAGE DeriveFunctor       #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 module Main (main) where
 
 import Prelude hiding (foldl1, foldr1, head, last, maximum, minimum)
@@ -9,6 +9,7 @@ import Prelude hiding (foldl1, foldr1, head, last, maximum, minimum)
 import Data.Functor.Compose                 (Compose (..))
 import Data.Functor.Identity                (Identity (..))
 import Data.Functor.Product                 (Product (..))
+import Data.Functor.Reverse                 (Reverse (..))
 import Data.Functor.Sum                     (Sum (..))
 import Data.List.NonEmpty                   (NonEmpty (..))
 import Data.Semigroup
@@ -36,6 +37,7 @@ main = defaultMain
     , foldable1tests "Identity"  (P1 :: P1 Identity)
     , foldable1tests "Compose"   (P1 :: P1 (Compose NonEmpty NonEmpty))
     , foldable1tests "Product"   (P1 :: P1 (Product NonEmpty NonEmpty))
+    , foldable1tests "Reverse"   (P1 :: P1 (Reverse NonEmpty))
     , foldable1tests "Sum"       (P1 :: P1 (Sum NonEmpty NonEmpty))
     ]
 

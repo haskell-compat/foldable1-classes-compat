@@ -578,6 +578,11 @@ instance Foldable1 Tree where
 instance Foldable1 f => Foldable1 (Reverse f) where
     foldMap1 f = getDual . foldMap1 (Dual . f) . getReverse
 
+    foldrMap1  f g (Reverse xs) = foldlMap1  f (flip g) xs
+    foldlMap1  f g (Reverse xs) = foldrMap1  f (flip g) xs
+    foldrMap1' f g (Reverse xs) = foldlMap1' f (flip g) xs
+    foldlMap1' f g (Reverse xs) = foldrMap1' f (flip g) xs
+
     head = last . getReverse
     last = head . getReverse
 
