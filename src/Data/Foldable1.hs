@@ -35,7 +35,7 @@ import Data.Semigroup
        Semigroup (..), Sum (..))
 import Prelude
        (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($!), ($), (.),
-       (=<<))
+       (=<<), flip, const)
 
 import qualified Data.List.NonEmpty as NE
 
@@ -290,7 +290,15 @@ class Foldable t => Foldable1 t where
 -- "IAmFineYou?"
 --
 intercalate1 :: (Foldable1 t, Semigroup m) => m -> t m -> m
-intercalate1 sep = foldr1 (\a b -> a <> sep <> b)
+intercalate1 = flip intercalateMap1 id
+
+intercalateMap1 :: (Foldable1 t, Semigroup m) => m -> (a -> m) -> t a -> m
+intercalateMap1 j f = flip joinee j . foldMap1 (JoinWith . const . f)
+
+newtype JoinWith a = JoinWith {joinee :: (a -> a)}
+
+instance Semigroup a => Semigroup (JoinWith a) where
+  JoinWith a <> JoinWith b = JoinWith $ \j -> a j <> j <> b j
 
 -- | Monadic fold over the elements of a non-empty structure,
 -- associating to the right, i.e. from right to left.
