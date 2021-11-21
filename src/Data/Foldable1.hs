@@ -272,7 +272,7 @@ class Foldable t => Foldable1 t where
         f' a (SJust b) = g a b
 
         g' bb a SNothing  = bb $! SJust (f a)
-        g' bb a (SJust b) = bb $! SJust (g a b) 
+        g' bb a (SJust b) = bb $! SJust (g a b)
 
 -------------------------------------------------------------------------------
 -- Combinators
@@ -542,8 +542,9 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (Compose f g) where
     foldMap1 f = foldMap1 (foldMap1 f) . getCompose
-    -- This is incorrect definition!
-    -- foldrMap1 f g = foldrMap1 (foldrMap1 f g) g . getCompose
+
+    foldrMap1 f g = foldrMap1 (foldrMap1 f g) (\xs x -> foldr g x xs) . getCompose
+    foldr1 f = foldrMap1 (foldr1 f) (\xs x -> foldr f x xs) . getCompose
 
     head = head . head . getCompose
     last = last . last . getCompose
@@ -559,7 +560,6 @@ instance Foldable1 Tree where
     foldMap1' f = go where
         go (Node x ys) =
             foldl' (\m zs -> let gozs = go zs in gozs `seq` m <> gozs) (f x) ys
-
 
     foldlMap1 f g (Node x xs) = goForest (f x) xs where
         goForest = foldl' go
