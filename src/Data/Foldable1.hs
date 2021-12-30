@@ -18,6 +18,8 @@
 -- | A class of non-empty data structures that can be folded to a summary value.
 module Data.Foldable1 (
     Foldable1(..),
+    foldr1, foldr1',
+    foldl1, foldl1',
     intercalate1,
     foldrM1,
     foldlM1,
@@ -129,75 +131,6 @@ class Foldable t => Foldable1 t where
     foldMap1' :: Semigroup m => (a -> m) -> t a -> m
     foldMap1' f = foldlMap1' f (\m a -> m <> f a)
 
-    -- | Right-associative fold of a structure.
-    --
-    -- In the case of lists, 'foldr1', when applied to a binary operator,
-    -- and a list, reduces the list using the binary operator,
-    -- from right to left:
-    --
-    -- > foldr1 f [x1, x2, ..., xn] == x1 `f` (x2 `f` ... (xn1 `f` xn )...)
-    --
-    -- Note that, since the head of the resulting expression is produced by
-    -- an application of the operator to the first element of the list,
-    -- 'foldr1' can produce a terminating expression from an infinite list.
-    --
-    -- For a general 'Foldable1' structure this should be semantically identical
-    -- to,
-    --
-    -- @foldr1 f = foldr1 f . 'toNonEmpty'@
-    --
-    foldr1 :: (a -> a -> a) -> t a -> a
-    foldr1 = foldrMap1 id
-
-    -- | Right-associative fold of a structure, but with strict application of
-    -- the operator.
-    --
-    foldr1' :: (a -> a -> a) -> t a -> a
-    foldr1' = foldrMap1' id
-
-    -- | Left-associative fold of a structure.
-    --
-    -- In the case of lists, 'foldl1', when applied to a binary
-    -- operator, and a list, reduces the list using the binary operator,
-    -- from left to right:
-    --
-    -- > foldl1 f [x1, x2, ..., xn] == (...((x1 `f` x2) `f`...) `f` xn
-    --
-    -- Note that to produce the outermost application of the operator the
-    -- entire input list must be traversed. This means that 'foldl1' will
-    -- diverge if given an infinite list.
-    --
-    -- Also note that if you want an efficient left-fold, you probably want to
-    -- use 'foldl1'' instead of 'foldl1'. The reason for this is that latter does
-    -- not force the "inner" results (e.g. @x1 \`f\` x2@ in the above example)
-    -- before applying them to the operator (e.g. to @(\`f\` x3)@). This results
-    -- in a thunk chain \(\mathcal{O}(n)\) elements long, which then must be
-    -- evaluated from the outside-in.
-    --
-    -- For a general 'Foldable1' structure this should be semantically identical
-    -- to,
-    --
-    -- @foldl1 f z = foldl1 f . 'toNonEmpty'@
-    --
-    foldl1 :: (a -> a -> a) -> t a -> a
-    foldl1 = foldlMap1 id
-
-    -- | Left-associative fold of a structure but with strict application of
-    -- the operator.
-    --
-    -- This ensures that each step of the fold is forced to weak head normal
-    -- form before being applied, avoiding the collection of thunks that would
-    -- otherwise occur. This is often what you want to strictly reduce a finite
-    -- list to a single, monolithic result (e.g. 'length').
-    --
-    -- For a general 'Foldable1' structure this should be semantically identical
-    -- to,
-    --
-    -- @foldl1' f z = foldl1 f . 'toNonEmpty'@
-    --
-    foldl1' :: (a -> a -> a) -> t a -> a
-    foldl1' = foldlMap1' id
-
     -- | List of elements of a structure, from left to right.
     --
     -- >>> toNonEmpty (Identity 2)
@@ -238,6 +171,7 @@ class Foldable t => Foldable1 t where
     last :: t a -> a
     last = getLast #. foldMap1 Last
 
+    -- | Generalized 'foldr1'.
     foldrMap1 :: (a -> b) -> (a -> b -> b) -> t a -> b
     foldrMap1 f g xs =
         appFromMaybe (foldMap1 (FromMaybe #. h) xs) Nothing
@@ -245,6 +179,7 @@ class Foldable t => Foldable1 t where
         h a Nothing  = f a
         h a (Just b) = g a b
 
+    -- | Generalized 'foldl1''.
     foldlMap1' :: (a -> b) -> (b -> a -> b) -> t a -> b
     foldlMap1' f g xs =
         foldrMap1 f' g' xs SNothing
@@ -257,6 +192,7 @@ class Foldable t => Foldable1 t where
         g' a x SNothing  = x $! SJust (f a)
         g' a x (SJust b) = x $! SJust (g b a)
 
+    -- | Generalized 'foldl1'.
     foldlMap1 :: (a -> b) -> (b -> a -> b) -> t a -> b
     foldlMap1 f g xs =
         appFromMaybe (getDual (foldMap1 ((Dual . FromMaybe) #. h) xs)) Nothing
@@ -264,6 +200,7 @@ class Foldable t => Foldable1 t where
         h a Nothing  = f a
         h a (Just b) = g b a
 
+    -- | Generalized 'foldr1''.
     foldrMap1' :: (a -> b) -> (a -> b -> b) -> t a -> b
     foldrMap1' f g xs =
         foldlMap1 f' g' xs SNothing
@@ -277,6 +214,79 @@ class Foldable t => Foldable1 t where
 -------------------------------------------------------------------------------
 -- Combinators
 -------------------------------------------------------------------------------
+
+-- | Right-associative fold of a structure.
+--
+-- In the case of lists, 'foldr1', when applied to a binary operator,
+-- and a list, reduces the list using the binary operator,
+-- from right to left:
+--
+-- > foldr1 f [x1, x2, ..., xn] == x1 `f` (x2 `f` ... (xn1 `f` xn )...)
+--
+-- Note that, since the head of the resulting expression is produced by
+-- an application of the operator to the first element of the list,
+-- 'foldr1' can produce a terminating expression from an infinite list.
+--
+-- For a general 'Foldable1' structure this should be semantically identical
+-- to,
+--
+-- @foldr1 f = foldr1 f . 'toNonEmpty'@
+--
+foldr1 :: Foldable1 t => (a -> a -> a) -> t a -> a
+foldr1 = foldrMap1 id
+{-# INLINE foldr1 #-}
+
+-- | Right-associative fold of a structure, but with strict application of
+-- the operator.
+--
+foldr1' :: Foldable1 t => (a -> a -> a) -> t a -> a
+foldr1' = foldrMap1' id
+{-# INLINE foldr1' #-}
+
+-- | Left-associative fold of a structure.
+--
+-- In the case of lists, 'foldl1', when applied to a binary
+-- operator, and a list, reduces the list using the binary operator,
+-- from left to right:
+--
+-- > foldl1 f [x1, x2, ..., xn] == (...((x1 `f` x2) `f`...) `f` xn
+--
+-- Note that to produce the outermost application of the operator the
+-- entire input list must be traversed. This means that 'foldl1' will
+-- diverge if given an infinite list.
+--
+-- Also note that if you want an efficient left-fold, you probably want to
+-- use 'foldl1'' instead of 'foldl1'. The reason for this is that latter does
+-- not force the "inner" results (e.g. @x1 \`f\` x2@ in the above example)
+-- before applying them to the operator (e.g. to @(\`f\` x3)@). This results
+-- in a thunk chain \(\mathcal{O}(n)\) elements long, which then must be
+-- evaluated from the outside-in.
+--
+-- For a general 'Foldable1' structure this should be semantically identical
+-- to,
+--
+-- @foldl1 f z = foldl1 f . 'toNonEmpty'@
+--
+foldl1 :: Foldable1 t => (a -> a -> a) -> t a -> a
+foldl1 = foldlMap1 id
+{-# INLINE foldl1 #-}
+
+-- | Left-associative fold of a structure but with strict application of
+-- the operator.
+--
+-- This ensures that each step of the fold is forced to weak head normal
+-- form before being applied, avoiding the collection of thunks that would
+-- otherwise occur. This is often what you want to strictly reduce a finite
+-- list to a single, monolithic result (e.g. 'length').
+--
+-- For a general 'Foldable1' structure this should be semantically identical
+-- to,
+--
+-- @foldl1' f z = foldl1 f . 'toNonEmpty'@
+--
+foldl1' :: Foldable1 t => (a -> a -> a) -> t a -> a
+foldl1' = foldlMap1' id
+{-# INLINE foldl1' #-}
 
 -- | Insert an @m@ between each pair of @t m@.
 --
@@ -294,11 +304,6 @@ intercalate1 = flip intercalateMap1 id
 
 intercalateMap1 :: (Foldable1 t, Semigroup m) => m -> (a -> m) -> t a -> m
 intercalateMap1 j f = flip joinee j . foldMap1 (JoinWith . const . f)
-
-newtype JoinWith a = JoinWith {joinee :: (a -> a)}
-
-instance Semigroup a => Semigroup (JoinWith a) where
-  JoinWith a <> JoinWith b = JoinWith $ \j -> a j <> j <> b j
 
 -- | Monadic fold over the elements of a non-empty structure,
 -- associating to the right, i.e. from right to left.
@@ -329,7 +334,7 @@ foldlMapM1 g f t = g x >>= \y -> foldlM f y xs
 
 -- See Note [maximumBy/minimumBy space usage]
 maximumBy :: Foldable1 t => (a -> a -> Ordering) -> t a -> a
-maximumBy cmp = foldl1 max'
+maximumBy cmp = foldl1' max'
   where max' x y = case cmp x y of
                         GT -> x
                         _  -> y
@@ -339,7 +344,7 @@ maximumBy cmp = foldl1 max'
 
 -- See Note [maximumBy/minimumBy space usage]
 minimumBy :: Foldable1 t => (a -> a -> Ordering) -> t a -> a
-minimumBy cmp = foldl1 min'
+minimumBy cmp = foldl1' min'
   where min' x y = case cmp x y of
                         GT -> y
                         _  -> x
@@ -373,6 +378,12 @@ instance Semigroup (FromMaybe b) where
 -- | Strict maybe, used to implement default foldlMap1' etc.
 data SMaybe a = SNothing | SJust !a
 
+-- | Used to implement intercalate1/Map
+newtype JoinWith a = JoinWith {joinee :: (a -> a)}
+
+instance Semigroup a => Semigroup (JoinWith a) where
+  JoinWith a <> JoinWith b = JoinWith $ \j -> a j <> j <> b j
+
 -------------------------------------------------------------------------------
 -- Instances for misc base types
 -------------------------------------------------------------------------------
@@ -386,19 +397,12 @@ instance Foldable1 NonEmpty where
 
     toNonEmpty = id
 
-    foldr1 f (x :| xs) = go x xs where
-        go y [] = y
-        go y (z : zs) = f y (go z zs)
-
     foldrMap1 g f (x :| xs) = go x xs where
         go y [] = g y
         go y (z : zs) = f y (go z zs)
 
-    foldl1 f (x :| xs) = foldl f x xs
-    foldlMap1 g f (x :| xs) = foldl f (g x) xs
-
-    foldl1' f (x :| xs) = foldl' f x xs
-    foldlMap1' g f (x :| xs) = foldl' f (g x) xs
+    foldlMap1  g f (x :| xs) = foldl f (g x) xs
+    foldlMap1' g f (x :| xs) = let gx = g x in gx `seq` foldl' f gx xs
 
     head = NE.head
     last = NE.last
@@ -423,7 +427,6 @@ instance Foldable1 Complex where
 
 instance Foldable1 ((,) a) where
     foldMap1 f (_, y) = f y
-    foldr1 _ (_, y) = y
     toNonEmpty (_, x) = x :| []
     minimum (_, x) = x
     maximum (_, x) = x
@@ -494,12 +497,12 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (f :.: g) where
 -------------------------------------------------------------------------------
 
 instance Foldable1 Identity where
-    foldMap1                = coerce
+    foldMap1      = coerce
 
-    foldr1 _                = coerce
-    foldrMap1 g _           = coerce g
-    foldl1 _                = coerce
-    foldlMap1 g _           = coerce g
+    foldrMap1  g _ = coerce g
+    foldrMap1' g _ = coerce g
+    foldlMap1  g _ = coerce g
+    foldlMap1' g _ = coerce g
 
     toNonEmpty (Identity x) = x :| []
 
@@ -521,9 +524,6 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Functor.Sum f g) where
     foldMap1 f (Functor.InL x) = foldMap1 f x
     foldMap1 f (Functor.InR y) = foldMap1 f y
 
-    foldr1 f (Functor.InL x) = foldr1 f x
-    foldr1 f (Functor.InR y) = foldr1 f y
-
     foldrMap1 g f (Functor.InL x) = foldrMap1 g f x
     foldrMap1 g f (Functor.InR y) = foldrMap1 g f y
 
@@ -544,7 +544,6 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (Compose f g) where
     foldMap1 f = foldMap1 (foldMap1 f) . getCompose
 
     foldrMap1 f g = foldrMap1 (foldrMap1 f g) (\xs x -> foldr g x xs) . getCompose
-    foldr1 f = foldrMap1 (foldr1 f) (\xs x -> foldr f x xs) . getCompose
 
     head = head . head . getCompose
     last = last . last . getCompose
@@ -603,10 +602,10 @@ instance Foldable1 f => Foldable1 (Lift f) where
 instance Foldable1 (Tagged b) where
     foldMap1      = coerce
 
-    foldr1 _      = coerce
-    foldrMap1 g _ = coerce g
-    foldl1 _      = coerce
-    foldlMap1 g _ = coerce g
+    foldrMap1  g _ = coerce g
+    foldrMap1' g _ = coerce g
+    foldlMap1  g _ = coerce g
+    foldlMap1' g _ = coerce g
 
     toNonEmpty x = coerce x :| []
 
