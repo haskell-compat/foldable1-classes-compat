@@ -366,7 +366,7 @@ singleton = NEDL #. (:|)
 
 -- | Convert a dlist to a non-empty list
 runNonEmptyDList :: NonEmptyDList a -> NonEmpty a
-runNonEmptyDList = ($[]) . unNEDL
+runNonEmptyDList = ($ []) . unNEDL
 {-# INLINE runNonEmptyDList #-}
 
 -- | Used for foldrMap1 and foldlMap1 definitions
