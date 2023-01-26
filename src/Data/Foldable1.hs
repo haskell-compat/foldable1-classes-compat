@@ -64,6 +64,12 @@ import Data.Orphans ()
 import Data.Tagged (Tagged (..))
 #endif
 
+#ifdef MIN_VERSION_ghc_prim
+#if MIN_VERSION_ghc_prim(0,7,0)
+import GHC.Tuple (Solo (..))
+#endif
+#endif
+
 -- Instances
 import Control.Applicative.Backwards (Backwards (..))
 import Control.Applicative.Lift      (Lift (..))
@@ -613,6 +619,22 @@ instance Foldable1 (Tagged b) where
     head    = coerce
     minimum = coerce
     maximum = coerce
+#endif
+
+-------------------------------------------------------------------------------
+-- ghc-prim
+-------------------------------------------------------------------------------
+
+#ifdef MIN_VERSION_ghc_prim
+#if MIN_VERSION_ghc_prim(0,7,0)
+instance Foldable1 Solo where
+    foldMap1 f (Solo y) = f y
+    toNonEmpty (Solo x) = x :| []
+    minimum (Solo x) = x
+    maximum (Solo x) = x
+    head (Solo x) = x
+    last (Solo x) = x
+#endif
 #endif
 
 -------------------------------------------------------------------------------
