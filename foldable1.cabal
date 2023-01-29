@@ -31,8 +31,8 @@ tested-with:
    || ==8.8.4
    || ==8.10.7
    || ==9.0.2
-   || ==9.2.3
-   || ==9.4.1
+   || ==9.2.5
+   || ==9.4.4
 
 -- , GHCJS ==8.4
 
@@ -64,7 +64,7 @@ library
     build-depends: base-orphans >=0.8.1 && <0.9
 
   if !impl(ghc >=8.2)
-    build-depends: bifunctors >=5.5.11 && <5.6
+    build-depends: bifunctor-classes-compat >=0.1 && <0.2
 
   if !impl(ghc >=8.0)
     build-depends:
