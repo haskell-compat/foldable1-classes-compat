@@ -1,22 +1,29 @@
 cabal-version: >=1.10
-name:          foldable1
-version:       0.2
+name:          foldable1-classes-compat
+version:       0.1
 synopsis:
-  Class of non-empty data structures that can be folded to a summary value.
+  Compatibility package for the Foldable1 and Bifoldable1 type classes
 
 description:
-  Class of non-empty data structures that can be folded to a summary value.
+  A compatibility package for the @Foldable1@ and @Bifoldable1@ type classes,
+  which were introduced in @base-4.18.0.0@ (GHC 9.6.1). For more information,
+  see <https://github.com/haskell/core-libraries-committee/issues/9 this Core
+  Libraries Committee proposal>.
   .
-  A compatibility package for @Foldable1@ class which will be in base-4.??
+  @Foldable1@ and @Bifoldable1@ classify non-empty data structures that can be
+  folded to a summary value.
 
 license:       BSD3
-maintainer:    Oleg Grenrus <oleg.grenrus@iki.fi>
+maintainer:    Ryan Scott <ryan.gl.scott@gmail.com>
 author:        Edward Kmett, Oleg Grenrus
-homepage:      https://github.com/phadej/foldable1
-bug-reports:   https://github.com/phadej/foldable1/issues
+homepage:      https://github.com/haskell-compat/foldable1-classes-compat
+bug-reports:   https://github.com/haskell-compat/foldable1-classes-compat/issues
 category:      Data, Compatibility
 license-file:  LICENSE
 build-type:    Simple
+extra-source-files:
+  CHANGELOG.markdown
+  README.markdown
 tested-with:
   GHC ==7.0.4
    || ==7.2.2
@@ -38,7 +45,7 @@ tested-with:
 
 source-repository head
   type:     git
-  location: https://github.com/phadej/foldable1.git
+  location: https://github.com/haskell-compat/foldable1-classes-compat.git
 
 flag tagged
   description:
@@ -91,7 +98,7 @@ test-suite test
   build-depends:
       base
     , containers
-    , foldable1
+    , foldable1-classes-compat
     , transformers
 
   if !impl(ghc >=8.0)
@@ -118,7 +125,7 @@ benchmark bench
   build-depends:
       base
     , containers
-    , foldable1
+    , foldable1-classes-compat
     , transformers
 
   if !impl(ghc >=8.0)
