@@ -244,18 +244,18 @@ jobs:
           find sdist -maxdepth 1 -type f -name '*.tar.gz' -exec tar -C $GITHUB_WORKSPACE/unpacked -xzvf {} \;
       - name: generate cabal.project
         run: |
-          PKGDIR_foldable1="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/foldable1-[0-9.]*')"
-          echo "PKGDIR_foldable1=${PKGDIR_foldable1}" >> "$GITHUB_ENV"
+          PKGDIR_foldable1_classes_compat="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/foldable1-classes-compat-[0-9.]*')"
+          echo "PKGDIR_foldable1_classes_compat=${PKGDIR_foldable1_classes_compat}" >> "$GITHUB_ENV"
           rm -f cabal.project cabal.project.local
           touch cabal.project
           touch cabal.project.local
-          echo "packages: ${PKGDIR_foldable1}" >> cabal.project
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package foldable1" >> cabal.project ; fi
+          echo "packages: ${PKGDIR_foldable1_classes_compat}" >> cabal.project
+          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package foldable1-classes-compat" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
           cat >> cabal.project <<EOF
           allow-newer: cassava-0.5.2.0:base
           EOF
-          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(foldable1)$/; }' >> cabal.project.local
+          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(foldable1-classes-compat)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan
@@ -283,11 +283,11 @@ jobs:
           if [ $((HCNUMVER >= 70400)) -ne 0 ] ; then $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct ; fi
       - name: doctest
         run: |
-          if [ $((HCNUMVER >= 80000 && HCNUMVER < 90000)) -ne 0 ] ; then cd ${PKGDIR_foldable1} || false ; fi
+          if [ $((HCNUMVER >= 80000 && HCNUMVER < 90000)) -ne 0 ] ; then cd ${PKGDIR_foldable1_classes_compat} || false ; fi
           if [ $((HCNUMVER >= 80000 && HCNUMVER < 90000)) -ne 0 ] ; then doctest  -XHaskell2010 src ; fi
       - name: cabal check
         run: |
-          cd ${PKGDIR_foldable1} || false
+          cd ${PKGDIR_foldable1_classes_compat} || false
           ${CABAL} -vnormal check
       - name: haddock
         run: |
