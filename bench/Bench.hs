@@ -1,27 +1,39 @@
+{-# LANGUAGE CPP            #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor  #-}
-{-# OPTIONS_GHC -Wall #-}
+
+#if MIN_VERSION_base(4,18,0)
+# define HAS_FOLDABLE1_CONTAINERS MIN_VERSION_containers(0,6,7)
+#else
+# define HAS_FOLDABLE1_CONTAINERS 1
+#endif
+
 module Main (main) where
 
 import Prelude hiding (foldl1, head, last, maximum)
 
 import Control.DeepSeq    (NFData (..))
 import Criterion.Main
-import Data.Foldable      (Foldable)
+import qualified Data.Foldable as F (Foldable)
 import Data.Foldable1
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup     (Min (..))
+
+#if HAS_FOLDABLE1_CONTAINERS
 import Data.Tree          (Tree (..))
+#endif
 
 input :: NonEmpty Int
 input = 1 :| take 10000000 [2 .. ]
 
+#if HAS_FOLDABLE1_CONTAINERS
 tree :: Tree Int
 tree = go 7 0 where
     go :: Int -> Int -> Tree Int
     go n x
         | n <= 0    = Node x []
         | otherwise = Node x [ go (pred n) (x * 10 + x') | x' <- [0 .. 9] ]
+#endif
 
 main :: IO ()
 main = defaultMain
@@ -51,6 +63,7 @@ main = defaultMain
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) ne
         ]
 
+#if HAS_FOLDABLE1_CONTAINERS
     -- Trees
     , env (return tree) $ \tr -> bgroup "Tree-vanilla"
         [ bench "head" $ whnf head tr
@@ -91,6 +104,7 @@ main = defaultMain
         , bench "foldlMap1' id min" $ whnf (foldlMap1' id min) tr
         , bench "foldlMap1 id min"  $ whnf (foldlMap1 id min) tr
         ]
+#endif
     ]
 
 -------------------------------------------------------------------------------
@@ -99,7 +113,7 @@ main = defaultMain
 
 -- Using foldMap1 only
 newtype NE1 a = NE1 (NonEmpty a)
-  deriving (Functor, Data.Foldable.Foldable)
+  deriving (Functor, F.Foldable)
 
 instance NFData a => NFData (NE1 a) where
     rnf (NE1 xs) = rnf xs
@@ -109,7 +123,7 @@ instance Foldable1 NE1 where
 
 -- Using toNonEmpty
 -- newtype NE2 a = NE2 (NonEmpty a)
---   deriving (Functor, Foldable)
+--   deriving (Functor, F.Foldable)
 --
 -- instance NFData a => NFData (NE2 a) where
 --     rnf (NE2 xs) = rnf xs
@@ -119,7 +133,7 @@ instance Foldable1 NE1 where
 
 -- Using to foldrMap1
 newtype NE3 a = NE3 (NonEmpty a)
-  deriving (Functor, Foldable)
+  deriving (Functor, F.Foldable)
 
 instance NFData a => NFData (NE3 a) where
     rnf (NE3 xs) = rnf xs
@@ -127,13 +141,14 @@ instance NFData a => NFData (NE3 a) where
 instance Foldable1 NE3 where
     foldrMap1 g f (NE3 xs) = foldrMap1 g f xs
 
+#if HAS_FOLDABLE1_CONTAINERS
 -------------------------------------------------------------------------------
 -- Tree variants
 -------------------------------------------------------------------------------
 
 -- Using foldMap1 only
 newtype Tree1 a = Tree1 (Tree a)
-  deriving (Functor, Foldable)
+  deriving (Functor, F.Foldable)
 
 instance NFData a => NFData (Tree1 a) where
     rnf (Tree1 xs) = rnf xs
@@ -143,7 +158,7 @@ instance Foldable1 Tree1 where
 
 -- Using toNonEmpty
 -- newtype Tree2 a = Tree2 (Tree a)
---   deriving (Functor, Foldable)
+--   deriving (Functor, F.Foldable)
 --
 -- instance NFData a => NFData (Tree2 a) where
 --     rnf (Tree2 xs) = rnf xs
@@ -153,10 +168,11 @@ instance Foldable1 Tree1 where
 
 -- Using to foldrMap1
 newtype Tree3 a = Tree3 (Tree a)
-  deriving (Functor, Foldable)
+  deriving (Functor, F.Foldable)
 
 instance NFData a => NFData (Tree3 a) where
     rnf (Tree3 xs) = rnf xs
 
 instance Foldable1 Tree3 where
     foldrMap1 f g (Tree3 xs) = foldrMap1 f g xs
+#endif
