@@ -1,7 +1,17 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+
+#if MIN_VERSION_base(4,18,0)
+# define HAS_FOLDABLE1_CONTAINERS   MIN_VERSION_containers(0,6,7)
+# define HAS_FOLDABLE1_TRANSFORMERS MIN_VERSION_transformers(0,6,1)
+#else
+# define HAS_FOLDABLE1_CONTAINERS   1
+# define HAS_FOLDABLE1_TRANSFORMERS 1
+#endif
+
 module Main (main) where
 
 import Prelude hiding (foldl1, foldr1, head, last, maximum, minimum)
@@ -9,12 +19,10 @@ import Prelude hiding (foldl1, foldr1, head, last, maximum, minimum)
 import Data.Functor.Compose                 (Compose (..))
 import Data.Functor.Identity                (Identity (..))
 import Data.Functor.Product                 (Product (..))
-import Data.Functor.Reverse                 (Reverse (..))
 import Data.Functor.Sum                     (Sum (..))
 import Data.List.NonEmpty                   (NonEmpty (..))
 import Data.Semigroup
        (First (..), Last (..), Max (..), Min (..), Semigroup (..))
-import Data.Tree                            (Tree (..))
 import Test.Framework.Providers.API         (Test, TestName, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.Framework.Runners.Console       (defaultMain)
@@ -25,19 +33,32 @@ import Test.QuickCheck.Poly                 (A, B, OrdA)
 
 import Test.QuickCheck.Instances ()
 
-import Data.Foldable  (Foldable (foldMap), toList)
+import qualified Data.Foldable as F         (Foldable (foldMap))
+import Data.Foldable                        (toList)
 import Data.Foldable1
+
+#if HAS_FOLDABLE1_CONTAINERS
+import Data.Tree                            (Tree (..))
+#endif
+
+#if HASH_FOLDABLE1_TRANSFORMERS
+import Data.Functor.Reverse                 (Reverse (..))
+#endif
 
 main :: IO ()
 main = defaultMain
     [ foldable1tests "NonEmpty"  (P1 :: P1 NonEmpty)
     , foldable1tests "foldMap1"  (P1 :: P1 NE1)
     , foldable1tests "foldrMap1" (P1 :: P1 NE3)
+#if HAS_FOLDABLE1_CONTAINERS
     , foldable1tests "Tree"      (P1 :: P1 Tree)
+#endif
     , foldable1tests "Identity"  (P1 :: P1 Identity)
     , foldable1tests "Compose"   (P1 :: P1 (Compose NonEmpty NonEmpty))
     , foldable1tests "Product"   (P1 :: P1 (Product NonEmpty NonEmpty))
+#if HASH_FOLDABLE1_TRANSFORMERS
     , foldable1tests "Reverse"   (P1 :: P1 (Reverse NonEmpty))
+#endif
     , foldable1tests "Sum"       (P1 :: P1 (Sum NonEmpty NonEmpty))
     ]
 
@@ -93,7 +114,7 @@ foldable1tests name _p = testGroup name
     smaller = mapSize (`div` 3)
 
     coherentFoldMap :: f A -> Fun A [B] -> Property
-    coherentFoldMap xs f' = foldMap f xs === foldMap1 f xs where
+    coherentFoldMap xs f' = F.foldMap f xs === foldMap1 f xs where
         f = applyFun f'
 
     coherentToNonEmpty :: f A -> Property
@@ -119,7 +140,7 @@ foldable1tests name _p = testGroup name
         g = applyFun2 g'
 
     defaultFoldMap :: f A -> Fun A [B] -> Property
-    defaultFoldMap xs f' = foldMap f xs === foldrMap1 f (\a m -> f a Data.Semigroup.<> m) xs where
+    defaultFoldMap xs f' = F.foldMap f xs === foldrMap1 f (\a m -> f a Data.Semigroup.<> m) xs where
         f = applyFun f'
 
     defaultFoldr1Map :: f A -> Fun A [B] -> Fun (A, [B]) [B] -> Property
@@ -156,7 +177,7 @@ foldable1tests name _p = testGroup name
     defaultMaximum xs = maximum xs === getMax (foldMap1 Max xs)
 
     viaFoldMap :: f A -> Fun A [B] -> Property
-    viaFoldMap xs f' = foldMap f xs === foldMap f (toNonEmpty xs) where
+    viaFoldMap xs f' = F.foldMap f xs === F.foldMap f (toNonEmpty xs) where
         f = applyFun f'
 
     viaFoldr1 :: f [B] -> Fun ([B],[B]) [B] -> Property
@@ -193,14 +214,14 @@ foldable1tests name _p = testGroup name
 
 -- Using foldMap1 to define Foldable1
 newtype NE1 a = NE1 (NonEmpty a)
-  deriving (Eq, Show, Functor, Data.Foldable.Foldable, Arbitrary)
+  deriving (Eq, Show, Functor, F.Foldable, Arbitrary)
 
 instance Foldable1 NE1 where
     foldMap1 f (NE1 xs) = foldMap1 f xs
 
 -- Using foldrMap1 to define Foldable1
 newtype NE3 a = NE3 (NonEmpty a)
-  deriving (Eq, Show, Functor, Foldable, Arbitrary)
+  deriving (Eq, Show, Functor, F.Foldable, Arbitrary)
 
 instance Foldable1 NE3 where
     foldrMap1 g f (NE3 xs) = foldrMap1 g f xs
