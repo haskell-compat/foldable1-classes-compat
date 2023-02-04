@@ -82,6 +82,9 @@ library
         semigroups           >=0.18.5 && <0.20
       , transformers-compat  >=0.6    && <0.8
 
+  if !impl(ghc >= 7.2)
+    build-depends: generic-deriving >=1.14 && <1.15
+
   if flag(tagged)
     build-depends: tagged >=0.4.4 && <1
 

@@ -37,7 +37,7 @@ import Data.Semigroup
        Semigroup (..), Sum (..))
 import Prelude
        (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($!), ($), (.),
-       (=<<), flip, const)
+       (=<<), flip, const, error)
 
 import qualified Data.List.NonEmpty as NE
 
@@ -45,7 +45,9 @@ import qualified Data.List.NonEmpty as NE
 import Data.Complex (Complex (..))
 import GHC.Generics
        (M1 (..), Par1 (..), Rec1 (..), V1, (:*:) (..), (:+:) (..), (:.:) (..))
-import Prelude      (error)
+#else
+import Generics.Deriving
+       (M1 (..), Par1 (..), Rec1 (..), V1, (:*:) (..), (:+:) (..), (:.:) (..))
 #endif
 
 #if MIN_VERSION_base(4,6,0)
@@ -476,7 +478,6 @@ deriving instance (Foldable1 f) => Foldable1 (Mon.Ap f)
 -- GHC.Generics instances
 -------------------------------------------------------------------------------
 
-#if MIN_VERSION_base(4,4,0)
 instance Foldable1 V1 where
     foldMap1 _ x = x `seq` error "foldMap1 @V1"
 
@@ -496,7 +497,6 @@ instance (Foldable1 f, Foldable1 g) => Foldable1 (f :*: g) where
 
 instance (Foldable1 f, Foldable1 g) => Foldable1 (f :.: g) where
     foldMap1 f = foldMap1 (foldMap1 f) . unComp1
-#endif
 
 -------------------------------------------------------------------------------
 -- Extra instances
