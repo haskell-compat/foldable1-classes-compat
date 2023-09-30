@@ -13,11 +13,11 @@ module Main (main) where
 import Prelude hiding (foldl1, head, last, maximum)
 
 import Control.DeepSeq    (NFData (..))
-import Criterion.Main
 import qualified Data.Foldable as F (Foldable)
 import Data.Foldable1
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup     (Min (..))
+import Test.Tasty.Bench
 
 #if HAS_FOLDABLE1_CONTAINERS
 import Data.Tree          (Tree (..))
