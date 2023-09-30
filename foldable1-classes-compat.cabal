@@ -65,7 +65,7 @@ library
   if !impl(ghc >= 9.6)
     hs-source-dirs: src
     build-depends:
-        containers    >=0.4 && <0.7
+        containers    >=0.4 && <0.8
       , transformers  >=0.3 && <0.7
     exposed-modules:
       Data.Foldable1
