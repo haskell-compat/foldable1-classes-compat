@@ -3,17 +3,11 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
-{-# LANGUAGE TypeOperators              #-}
-
-#if __GLASGOW_HASKELL__ >=706
-{-# LANGUAGE PolyKinds #-}
-#endif
-
-#if __GLASGOW_HASKELL__ >=702
 {-# LANGUAGE Trustworthy                #-}
-#endif
+{-# LANGUAGE TypeOperators              #-}
 
 -- | A class of non-empty data structures that can be folded to a summary value.
 module Data.Foldable1 (
@@ -29,34 +23,23 @@ module Data.Foldable1 (
     minimumBy,
     ) where
 
+import Data.Coerce        (Coercible, coerce)
+import Data.Complex       (Complex (..))
 import Data.Foldable      (Foldable, foldlM, foldr)
 import Data.List          (foldl, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Ord           (Down (..))
 import Data.Semigroup
        (Dual (..), First (..), Last (..), Max (..), Min (..), Product (..),
        Semigroup (..), Sum (..))
+import GHC.Generics
+       (M1 (..), Par1 (..), Rec1 (..), V1, (:*:) (..), (:+:) (..), (:.:) (..))
 import Prelude
        (Maybe (..), Monad (..), Ord, Ordering (..), id, seq, ($!), ($), (.),
        (=<<), flip, const, error)
 
 import qualified Data.List.NonEmpty as NE
-
-#if MIN_VERSION_base(4,4,0)
-import Data.Complex (Complex (..))
-import GHC.Generics
-       (M1 (..), Par1 (..), Rec1 (..), V1, (:*:) (..), (:+:) (..), (:.:) (..))
-#else
-import Generics.Deriving
-       (M1 (..), Par1 (..), Rec1 (..), V1, (:*:) (..), (:+:) (..), (:.:) (..))
-#endif
-
-#if MIN_VERSION_base(4,6,0)
-import Data.Ord (Down (..))
-#endif
-
-#if MIN_VERSION_base(4,8,0)
 import qualified Data.Monoid as Mon
-#endif
 
 #if !MIN_VERSION_base(4,12,0)
 import Data.Orphans ()
@@ -84,13 +67,6 @@ import Data.Tree                     (Tree (..))
 import qualified Data.Functor.Product as Functor
 import qualified Data.Functor.Sum     as Functor
 
--- coerce
-#if __GLASGOW_HASKELL__ <708
-import Unsafe.Coerce (unsafeCoerce)
-#else
-import Data.Coerce (Coercible, coerce)
-#endif
-
 -- $setup
 -- >>> import Prelude hiding (foldr1, foldl1, head, last, minimum, maximum)
 
@@ -100,9 +76,7 @@ import Data.Coerce (Coercible, coerce)
 
 -- | Non-empty data structures that can be folded.
 class Foldable t => Foldable1 t where
-#if __GLASGOW_HASKELL__ >= 708
     {-# MINIMAL foldMap1 | foldrMap1 #-}
-#endif
 
     -- At some point during design it was possible to define this class using
     -- only 'toNonEmpty'. But it seems a bad idea in general.
@@ -415,17 +389,13 @@ instance Foldable1 NonEmpty where
     head = NE.head
     last = NE.last
 
-#if MIN_VERSION_base(4,6,0)
 instance Foldable1 Down where
     foldMap1 = coerce
-#endif
 
-#if MIN_VERSION_base(4,4,0)
 instance Foldable1 Complex where
     foldMap1 f (x :+ y) = f x <> f y
 
     toNonEmpty (x :+ y) = x :| y : []
-#endif
 
 -------------------------------------------------------------------------------
 -- Instances for tuples
@@ -466,9 +436,7 @@ instance Foldable1 First where
 instance Foldable1 Last where
     foldMap1 = coerce
 
-#if MIN_VERSION_base(4,8,0)
 deriving instance (Foldable1 f) => Foldable1 (Mon.Alt f)
-#endif
 
 #if MIN_VERSION_base(4,12,0)
 deriving instance (Foldable1 f) => Foldable1 (Mon.Ap f)
@@ -641,13 +609,5 @@ instance Foldable1 Solo where
 -- coerce shim
 -------------------------------------------------------------------------------
 
-#if __GLASGOW_HASKELL__ <708
-coerce :: a -> b
-coerce = unsafeCoerce
-
-(#.) :: (b -> c) -> (a -> b) -> a -> c
-(#.) _f = coerce
-#else
 (#.) :: Coercible b c => (b -> c) -> (a -> b) -> a -> c
 (#.) _f = coerce
-#endif

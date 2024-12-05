@@ -1,12 +1,7 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TypeOperators     #-}
-
-#if __GLASGOW_HASKELL__ >= 708
 {-# LANGUAGE Safe              #-}
-#elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy       #-}
-#endif
+{-# LANGUAGE TypeOperators     #-}
 module Data.Bifoldable1 where
 
 import Control.Applicative (Const (..))
