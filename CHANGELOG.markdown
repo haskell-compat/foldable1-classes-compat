@@ -1,6 +1,6 @@
 # Revision history for foldable1-classes-compat
 
-## next -- ????-??-??
+## 0.1.1 -- 2024-12-05
 
 * Drop support for pre-8.0 versions of GHC.
 
