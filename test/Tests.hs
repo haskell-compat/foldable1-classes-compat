@@ -23,12 +23,12 @@ import Data.Functor.Sum                     (Sum (..))
 import Data.List.NonEmpty                   (NonEmpty (..))
 import Data.Semigroup
        (First (..), Last (..), Max (..), Min (..), Semigroup (..))
-import Test.Framework.Providers.API         (Test, TestName, testGroup)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.Framework.Runners.Console       (defaultMain)
 import Test.QuickCheck
        (Arbitrary, Fun, Property, Testable, applyFun, applyFun2, counterexample,
        mapSize, (===))
+import Test.Tasty
+       (TestName, TestTree, defaultMain, testGroup)
+import Test.Tasty.QuickCheck                (testProperty)
 import Test.QuickCheck.Poly                 (A, B, OrdA)
 
 import Test.QuickCheck.Instances ()
@@ -46,7 +46,8 @@ import Data.Functor.Reverse                 (Reverse (..))
 #endif
 
 main :: IO ()
-main = defaultMain
+main = defaultMain $
+  testGroup "foldable1-classes-compat"
     [ foldable1tests "NonEmpty"  (P1 :: P1 NonEmpty)
     , foldable1tests "foldMap1"  (P1 :: P1 NE1)
     , foldable1tests "foldrMap1" (P1 :: P1 NE3)
@@ -76,7 +77,7 @@ foldable1tests
       )
     => TestName
     -> P1 f
-    -> Test
+    -> TestTree
 foldable1tests name _p = testGroup name
     [ testProperty "foldMap1 ~= foldMap" coherentFoldMap
     , testProperty "toList . toNonEmpty ~= toList" coherentToNonEmpty
