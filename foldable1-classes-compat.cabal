@@ -59,14 +59,15 @@ library
   ghc-options:      -Wall
   build-depends:    base >=4.9 && <4.22
 
-  if !impl(ghc >= 9.6) && !impl(mhs) -- no Data.Foldable1, Data.Bifoldable1 in base
-    hs-source-dirs: src
-    build-depends:
-        containers    >=0.4 && <0.9
-      , transformers  >=0.3 && <0.7
-    exposed-modules:
-      Data.Foldable1
-      Data.Bifoldable1
+  if !impl(mhs)
+    if !impl(ghc >= 9.6) -- no Data.Foldable1, Data.Bifoldable1 in base
+      hs-source-dirs: src
+      build-depends:
+          containers    >=0.4 && <0.9
+        , transformers  >=0.3 && <0.7
+      exposed-modules:
+        Data.Foldable1
+        Data.Bifoldable1
 
     if !impl(ghc >=8.6)
       build-depends: base-orphans >=0.8.1 && <0.10
