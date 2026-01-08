@@ -1,5 +1,10 @@
 # Revision history for foldable1-classes-compat
 
+## next -- ????-??-??
+
+* Allow building with MicroHs.
+* Allow building with `QuickCheck-2.17.*` and `quickcheck-instances-0.4.*`.
+
 ## 0.1.2 -- 2025-06-17
 
 * Replace `test-framework` with `tasty` in the test suite.
