@@ -1,6 +1,10 @@
 branches: master
 doctest: <9
 benchmarks: <8.2.1 || >8.2.1
+-- The test suite only uses the `containers` and `transformers` packages
+-- depending on some fairly complicated CPP, the logic for which is difficult
+-- to encode as conditional dependencies in the .cabal file.
+error-unused-packages: False
 
 constraint-set no-tagged
   constraints: foldable1 -tagged
