@@ -1,6 +1,6 @@
 # Revision history for foldable1-classes-compat
 
-## next -- ????-??-??
+## 0.1.3 -- 2026-01-08
 
 * Allow building with MicroHs.
 * Allow building with `QuickCheck-2.17.*` and `quickcheck-instances-0.4.*`.
