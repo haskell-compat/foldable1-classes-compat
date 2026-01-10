@@ -38,6 +38,7 @@ tested-with:
    || ==9.8.4
    || ==9.10.3
    || ==9.12.2
+   || ==9.14.1
 
 -- , GHCJS ==8.4
 
@@ -57,7 +58,7 @@ flag tagged
 library
   default-language: Haskell2010
   ghc-options:      -Wall
-  build-depends:    base >=4.9 && <4.22
+  build-depends:    base >=4.9 && <4.23
 
   if !impl(mhs)
     if !impl(ghc >= 9.6)
