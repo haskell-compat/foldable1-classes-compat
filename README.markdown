@@ -1,6 +1,5 @@
 # `foldable1-classes-compat`
 [![Hackage](https://img.shields.io/hackage/v/foldable1-classes-compat.svg)][Hackage: foldable1-classes-compat]
-[![Hackage Dependencies](https://img.shields.io/hackage-deps/v/foldable1-classes-compat.svg)](http://packdeps.haskellers.com/reverse/foldable1-classes-compat)
 [![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-blue.svg)][Haskell.org]
 [![BSD3 License](http://img.shields.io/badge/license-BSD3-brightgreen.svg)][tl;dr Legal: BSD3]
 [![Build](https://github.com/haskell-compat/foldable1-classes-compat/workflows/Haskell-CI/badge.svg)](https://github.com/haskell-compat/foldable1-classes-compat/actions?query=workflow%3AHaskell-CI)
